@@ -196,17 +196,17 @@ Mantener la regresión de las 11 puertas en cualquier cambio futuro. Si se modif
 
 **Estado inicial:** El proyecto no tenía flujo de CI, repositorio Git, rama activa ni remoto configurado.
 
-**Evidencia automatizada:** En esta sesión, la suite local vigente terminó con **160 pruebas aprobadas, 0 fallidas y 0 omitidas** en aproximadamente 233 segundos. En GitHub Actions, la corrida de `push` sobre `main` [35734820573](https://github.com/AlanEstradaCarrillo/Rem-Libreria/actions/runs/35734820573) terminó con **160/160 aprobadas, 0 fallidas y 0 omitidas** (39,4 segundos de pruebas). La PR temporal [#1](https://github.com/AlanEstradaCarrillo/Rem-Libreria/pull/1) mostró un fallo deliberado en [35734894689](https://github.com/AlanEstradaCarrillo/Rem-Libreria/actions/runs/35734894689); tras retirar la prueba temporal, tanto `push` [35735142752](https://github.com/AlanEstradaCarrillo/Rem-Libreria/actions/runs/35735142752) como `pull_request` [35735154446](https://github.com/AlanEstradaCarrillo/Rem-Libreria/actions/runs/35735154446) volvieron a verde, esta última con **160/160 aprobadas, 0 fallidas y 0 omitidas** (47,5 segundos de pruebas). La PR se cerró sin fusionar y sin cambios netos respecto a `main`.
+**Evidencia automatizada:** La suite local se repitió en la reconciliación actual: **160 pruebas aprobadas, 0 fallidas y 0 omitidas** en aproximadamente 256 segundos (frente a 233 segundos en la ejecución anterior). En GitHub Actions, la corrida de `push` sobre `main` [35734820573](https://github.com/AlanEstradaCarrillo/Rem-Libreria/actions/runs/35734820573) terminó con **160/160 aprobadas, 0 fallidas y 0 omitidas** (39,4 segundos de pruebas). La PR temporal [#1](https://github.com/AlanEstradaCarrillo/Rem-Libreria/pull/1) mostró un fallo deliberado en [35734894689](https://github.com/AlanEstradaCarrillo/Rem-Libreria/actions/runs/35734894689); tras retirar la prueba temporal, tanto `push` [35735142752](https://github.com/AlanEstradaCarrillo/Rem-Libreria/actions/runs/35735142752) como `pull_request` [35735154446](https://github.com/AlanEstradaCarrillo/Rem-Libreria/actions/runs/35735154446) volvieron a verde, esta última con **160/160 aprobadas, 0 fallidas y 0 omitidas** (47,5 segundos de pruebas). La PR se cerró sin fusionar y sin cambios netos respecto a `main`.
 
 **Evidencia técnica ejecutada:** Se añadió `.github/workflows/ci.yml` con eventos `push` y `pull_request`, permisos mínimos `contents: read`, PostgreSQL 18.6 aislado con health check, instalación limpia `npm ci`, Node 24 y `npm test`. El repositorio privado `AlanEstradaCarrillo/Rem-Libreria` recibió los **117 archivos** del proyecto; se compararon sus SHA de blob con los archivos locales y no hubo diferencias. `backend/.env`, dependencias instaladas y archivos de log no se publicaron. Las corridas reales confirmaron arranque del servicio PostgreSQL, instalación limpia y ejecución de la suite. La carpeta local aún no tiene `.git` ni remoto configurado porque Git local no tiene autenticación para este repositorio privado; la publicación se realizó mediante la conexión autorizada de GitHub.
 
-**Evidencia externa necesaria:** Falta configurar y comprobar una regla de protección de `main` que exija el check `Integración con PostgreSQL`. La conexión de GitHub disponible devuelve **403, Resource not accessible by integration** al consultar la protección de rama y no ofrece una operación administrativa para configurarla. Se requiere una persona con permisos de administración del repositorio. La autenticación de Git local también requiere intervención del titular si se desea usar `git push` desde esta carpeta.
+**Evidencia externa necesaria:** Falta configurar y comprobar una regla de protección de `main` que exija el check `Integración con PostgreSQL`. En la reconciliación actual, la API de la rama informó **`protected: false`**; la lectura detallada de protección devolvió **403, Resource not accessible by integration**. La consulta de reglas devolvió **403** con indicación de ampliar el plan o hacer público el repositorio. GitHub documenta que la protección de ramas en repositorios privados requiere un plan que la incluya. Se mantiene la privacidad solicitada; cualquier cambio de plan requiere decisión del titular y la configuración requiere acceso administrativo. La autenticación de Git local también requiere intervención del titular si se desea usar `git push` desde esta carpeta.
 
-**Riesgos pendientes:** CI funciona en `push` y `pull_request`, pero sin protección comprobada de `main` aún podría incorporarse un cambio que no pase la suite. La carpeta local no está vinculada con la historia Git remota para futuros envíos por CLI.
+**Riesgos pendientes:** CI funciona en `push` y `pull_request`, pero `main` no está protegida y aún podría incorporarse un cambio que no pase la suite. La carpeta local no está vinculada con la historia Git remota para futuros envíos por CLI.
 
 **Estado:** 🟡 **PENDIENTE DE VERIFICACIÓN EXTERNA**.
 
-**Siguiente acción:** Un administrador debe configurar la protección de `main` con el check `Integración con PostgreSQL` obligatorio y confirmar que un PR rojo no puede fusionarse. Después se repetirá la reconciliación de este bloque. Para trabajo futuro desde esta carpeta, autenticar Git local y vincularlo a la historia remota sin sobrescribirla.
+**Siguiente acción:** El titular debe decidir si habilita un plan de GitHub que admita protección de ramas privadas; no cambiar la visibilidad del repositorio por este motivo. Con un plan compatible, un administrador debe configurar la protección de `main` con el check `Integración con PostgreSQL` obligatorio y confirmar que un PR rojo no puede fusionarse. Después se repetirá la reconciliación de este bloque. Para trabajo futuro desde esta carpeta, autenticar Git local y vincularlo a la historia remota sin sobrescribirla.
 
 **Fase 2 implementada:** 1/6 bloques.
 
@@ -285,7 +285,7 @@ Obtener la configuración del proveedor/staging y repetir el ensayo de respaldo,
 
 **Fase 2 verificada técnicamente:** 0/6 bloques cerrados; Bloque 11 cuenta con evidencia técnica local completa, pero permanece amarillo por sus puertas externas.
 
-**Pendientes externos:** 2 — ejecución real de CI/protección de rama (Bloque 10) y configuración/ensayo de producción equivalente (Bloque 11).
+**Pendientes externos:** 2 — protección de rama (Bloque 10) y configuración/ensayo de producción equivalente (Bloque 11).
 
 **Listo para staging:** No.
 
@@ -359,7 +359,7 @@ Recabar las decisiones del negocio y elaborar la especificación aprobada. Hasta
 
 **Evidencia revisada:** `frontend/styles.css` (`#print-area` y `@media print`), `frontend/app.js` (generación e impresión del ticket), `package.json`, `backend/.env.example`, `README.md` y la suite integral de 160 pruebas.
 
-**Problemas encontrados:** No hay proveedor/URL de staging, base separada administrada, remoto Git ni Docker en el proyecto; por tanto no puede demostrarse un despliegue equivalente a producción desde esta sesión. La impresión física tampoco puede afirmarse por inspección de CSS.
+**Problemas encontrados:** No hay proveedor/URL de staging, base separada administrada ni Docker local; por tanto no puede demostrarse un despliegue equivalente a producción desde esta sesión. Al inspeccionar inicialmente este bloque aún no existía el repositorio Git remoto; ya se creó para CI, sin que ello sustituya staging. La impresión física tampoco puede afirmarse por inspección de CSS.
 
 **Riesgos:** Probar contra una base o dominio de producción contaminaría datos reales; reutilizar secretos o canales de WhatsApp sería inseguro. El layout de 80 mm puede requerir ajuste según la impresora real.
 
