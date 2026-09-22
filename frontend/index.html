@@ -1,0 +1,1858 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Librería REM · Punto de Venta</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- ======== LOGIN ======== -->
+  <section id="screen-login" class="screen login-screen">
+    <div class="login-card">
+      <div class="brand"><span class="brand-mark">📖</span><h1>Librería <span>REM</span></h1><p>Punto de venta para librería</p></div>
+      <form id="form-login" novalidate>
+        <label>Correo electrónico
+          <input type="email" id="login-email" autocomplete="username" required placeholder="usuario@libra.mx">
+        </label>
+        <label>Contraseña
+          <input type="password" id="login-pass" autocomplete="current-password" required placeholder="••••••••">
+        </label>
+        <p id="login-error" class="form-error" role="alert"></p>
+        <button type="submit" class="btn btn-primary btn-block">Iniciar sesión</button>
+      </form>
+      <p class="hint">Usuarios iniciales: admin@libra.mx y caja@libra.mx · usa las contraseñas configuradas en el servidor.</p>
+    </div>
+  </section>
+
+  <!-- ======== APLICACIÓN ======== -->
+  <section id="screen-app" class="screen hidden">
+    <header class="topbar">
+      <div class="brand-mini">📖 Librería <span>REM</span></div>
+      <label class="caja-selector">Caja
+        <select id="sel-caja" class="inp" aria-label="Caja activa"></select>
+      </label>
+      <div id="caja-chip" class="chip chip-warn">Caja cerrada</div>
+      <nav class="tabs" role="tablist">
+        <button class="tab active" data-tab="venta" role="tab">Venta</button>
+        <button class="tab" data-tab="inventario" role="tab">Inventario</button>
+        <button class="tab" data-tab="catalogo" role="tab">Catálogo</button>
+        <button class="tab admin-only" data-tab="compras" role="tab">Compras</button>
+        <button class="tab admin-only" data-tab="editorial" role="tab">Editorial</button>
+        <button class="tab" data-tab="pedidos" role="tab">Pedidos</button>
+        <button class="tab" data-tab="clientes-cotizaciones" role="tab" aria-controls="tab-clientes-cotizaciones">Clientes y cotizaciones</button>
+        <button class="tab" data-tab="caja" role="tab">Caja y corte</button>
+        <button class="tab admin-only" data-tab="reportes" role="tab">Reportes</button>
+        <button class="tab" data-tab="ventas" role="tab">Ventas recientes</button>
+      </nav>
+      <div class="user-box">
+        <span id="user-name"></span><span id="user-rol" class="chip"></span>
+        <button id="btn-logout" class="btn btn-ghost">Salir</button>
+      </div>
+    </header>
+
+    <main>
+      <!-- ===== Pestaña VENTA ===== -->
+      <div id="tab-venta" class="tabpane active">
+        <div class="venta-grid">
+          <div class="panel">
+            <h2>Buscar producto <small>(Enter = escanear código/ISBN)</small></h2>
+            <input id="inp-buscar" class="inp inp-lg" placeholder="Código de barras, ISBN o título…" autocomplete="off">
+            <div id="resultados" class="resultados"></div>
+          </div>
+          <div class="panel">
+            <h2>Carrito</h2>
+            <div class="venta-cliente">
+              <label for="sel-venta-cliente">
+                <span>Cliente registrado</span>
+                <select id="sel-venta-cliente" class="inp" aria-describedby="cliente-precio-aviso">
+                  <option value="">PÚBLICO GENERAL · Precio público</option>
+                </select>
+              </label>
+              <button id="btn-refrescar-clientes-pos" class="btn btn-outline" type="button">Actualizar clientes</button>
+            </div>
+            <p id="cliente-precio-aviso" class="subtle cliente-precio-aviso" role="status">Venta sin cliente registrado · precio público.</p>
+            <div class="tabla-scroll">
+              <table>
+                <thead><tr><th>Producto</th><th>Lista</th><th>Descuento</th><th>Final</th><th>Cant.</th><th>Importe</th><th></th></tr></thead>
+                <tbody id="carrito-body"></tbody>
+              </table>
+            </div>
+            <div class="carrito-pie">
+              <div class="cotizacion-fila">
+                <p id="carrito-cotizacion" class="cotizacion-estado" role="status">Agrega productos para cotizar.</p>
+                <button id="btn-reintentar-cotizacion" class="btn btn-ghost hidden" type="button">Reintentar cotización</button>
+              </div>
+              <div class="total-linea total-secundario"><span>Subtotal (sin IVA)</span><strong id="carrito-subtotal">$0.00</strong></div>
+              <div class="total-linea total-secundario"><span>IVA</span><strong id="carrito-iva">$0.00</strong></div>
+              <div class="total-linea total-secundario"><span>Descuento</span><strong id="carrito-descuento">$0.00</strong></div>
+              <div class="total-linea"><span>Total (IVA incluido)</span><strong id="carrito-total">$0.00</strong></div>
+              <div class="acciones">
+                <button id="btn-cancelar-venta" class="btn btn-ghost">Vaciar</button>
+                <button id="btn-guardar-cotizacion" class="btn btn-outline" type="button" disabled>Guardar cotización</button>
+                <button id="btn-cobrar" class="btn btn-primary btn-lg">Cobrar</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== Pestaña INVENTARIO ===== -->
+      <div id="tab-inventario" class="tabpane">
+        <div class="panel inventario-panel">
+          <div class="panel-head inventario-head">
+            <div>
+              <h2>Inventario</h2>
+              <p class="subtle">Existencias, reposición y conteos usan el mismo kardex del punto de venta y la tienda.</p>
+            </div>
+            <div class="subtabs" role="tablist" aria-label="Secciones de inventario">
+              <button class="subtab active" data-inventario="existencias" role="tab">Existencias</button>
+              <button class="subtab admin-only" data-inventario="reposicion" role="tab">Reposición</button>
+              <button class="subtab admin-only" data-inventario="conteos" role="tab">Conteos</button>
+            </div>
+          </div>
+
+          <section id="inventario-existencias" class="inventario-seccion active">
+            <div class="toolbar">
+              <input id="inp-inv-q" class="inp" placeholder="Buscar por título, SKU o ISBN…" autocomplete="off">
+            </div>
+            <div class="tabla-scroll tabla-alta">
+              <table>
+                <thead><tr><th>SKU</th><th>Producto</th><th>En tienda</th><th>Reservado</th><th>Consignado</th><th>Disponible</th><th>Total propio</th><th></th></tr></thead>
+                <tbody id="inv-body"></tbody>
+              </table>
+            </div>
+          </section>
+
+          <section id="inventario-reposicion" class="inventario-seccion admin-only">
+            <div class="toolbar toolbar-inventario">
+              <form id="form-reposicion-filtros" class="toolbar toolbar-sin-margen">
+                <input id="inp-reposicion-q" class="inp" maxlength="160" placeholder="Título, SKU, ISBN o editorial…" autocomplete="off">
+                <select id="sel-reposicion-proveedor" class="inp" aria-label="Filtrar por proveedor"><option value="">Todos los proveedores</option></select>
+                <label class="check check-filtro"><input id="chk-reposicion-todas" type="checkbox"> Ver todas las políticas</label>
+                <button class="btn btn-outline" type="submit">Buscar</button>
+              </form>
+              <div class="toolbar-acciones">
+                <button id="btn-refrescar-reposicion" class="btn btn-outline" type="button">Actualizar</button>
+                <button id="btn-reposicion-crear-orden" class="btn btn-primary" type="button" disabled>Crear orden seleccionada</button>
+              </div>
+            </div>
+            <p class="notice">Sugerencia = objetivo − (disponible + pendiente por recibir). Sólo aparece al alcanzar el mínimo configurado.</p>
+            <div class="tabla-scroll tabla-reposicion">
+              <table>
+                <thead><tr><th><span class="sr-only">Seleccionar</span></th><th>SKU</th><th>Producto</th><th>Disponible</th><th>En tránsito</th><th>Mínimo</th><th>Objetivo</th><th>Sugerido</th><th>Proveedor</th><th></th></tr></thead>
+                <tbody id="reposicion-body"></tbody>
+              </table>
+            </div>
+          </section>
+
+          <section id="inventario-conteos" class="inventario-seccion admin-only">
+            <div class="toolbar toolbar-inventario">
+              <form id="form-conteos-filtros" class="toolbar toolbar-sin-margen">
+                <input id="inp-conteo-q" class="inp" maxlength="160" placeholder="Folio, nota, SKU o producto…" autocomplete="off">
+                <select id="sel-conteo-estado" class="inp" aria-label="Filtrar conteos por estado">
+                  <option value="">Todos los estados</option>
+                  <option value="BORRADOR">Borradores</option>
+                  <option value="APLICADO">Aplicados</option>
+                  <option value="CANCELADO">Cancelados</option>
+                </select>
+                <button class="btn btn-outline" type="submit">Buscar</button>
+              </form>
+              <div class="toolbar-acciones">
+                <button id="btn-refrescar-conteos" class="btn btn-outline" type="button">Actualizar</button>
+                <button id="btn-conteo-nuevo" class="btn btn-primary" type="button">Nuevo conteo</button>
+              </div>
+            </div>
+            <div class="tabla-scroll tabla-conteos">
+              <table>
+                <thead><tr><th>Folio</th><th>Fecha</th><th>Nota</th><th>Captura</th><th>Diferencia</th><th>Estado</th><th></th></tr></thead>
+                <tbody id="conteos-body"></tbody>
+              </table>
+            </div>
+            <div class="paginacion-pedidos">
+              <button id="btn-conteos-anterior" class="btn btn-outline" type="button">Anterior</button>
+              <span id="conteos-pagina" class="subtle">Página 1</span>
+              <button id="btn-conteos-siguiente" class="btn btn-outline" type="button">Siguiente</button>
+            </div>
+          </section>
+        </div>
+      </div>
+
+      <!-- ===== Pestaña CATÁLOGO ===== -->
+      <div id="tab-catalogo" class="tabpane">
+        <div class="panel catalogo-panel">
+          <div class="panel-head catalogo-head">
+            <div>
+              <h2>Catálogo omnicanal</h2>
+              <p class="subtle">Productos, publicación y reglas comparten la misma fuente de datos del punto de venta.</p>
+            </div>
+            <div class="subtabs" role="tablist" aria-label="Secciones del catálogo">
+              <button class="subtab active" data-catalogo="productos" role="tab">Productos</button>
+              <button class="subtab" data-catalogo="categorias" role="tab">Categorías</button>
+              <button class="subtab" data-catalogo="precios" role="tab">Precios</button>
+            </div>
+          </div>
+
+          <section id="catalogo-productos" class="catalogo-seccion active">
+            <div class="toolbar">
+              <input id="inp-cat-producto-q" class="inp" placeholder="Título, autor, editorial, SKU o ISBN…">
+              <select id="sel-cat-producto-categoria" class="inp" aria-label="Filtrar por categoría"><option value="">Todas las categorías</option></select>
+              <button id="btn-descargar-plantilla-productos" class="btn btn-outline admin-only" type="button">Descargar plantilla</button>
+              <button id="btn-importar-productos" class="btn btn-outline admin-only" type="button">Importar CSV</button>
+              <button id="btn-cat-producto-nuevo" class="btn btn-primary admin-only" type="button">Nuevo producto</button>
+            </div>
+            <div class="tabla-scroll tabla-catalogo"><table>
+              <thead><tr><th>SKU</th><th>Producto</th><th>Categoría</th><th>Precio lista</th><th>Disponible</th><th>En línea</th><th></th></tr></thead>
+              <tbody id="cat-productos-body"></tbody>
+            </table></div>
+          </section>
+
+          <section id="catalogo-categorias" class="catalogo-seccion">
+            <div class="toolbar toolbar-end"><button id="btn-categoria-nueva" class="btn btn-primary admin-only">Nueva categoría</button></div>
+            <div class="tabla-scroll tabla-catalogo"><table>
+              <thead><tr><th>Orden</th><th>Nombre</th><th>Slug</th><th>Descripción</th><th>Estado</th><th></th></tr></thead>
+              <tbody id="categorias-body"></tbody>
+            </table></div>
+          </section>
+
+          <section id="catalogo-precios" class="catalogo-seccion">
+            <div class="toolbar toolbar-end"><button id="btn-regla-nueva" class="btn btn-primary admin-only">Nueva regla</button></div>
+            <p class="notice">Se aplica una sola regla: mayor prioridad, luego segmento específico, producto sobre categoría y finalmente regla global.</p>
+            <div class="tabla-scroll tabla-catalogo"><table>
+              <thead><tr><th>Regla</th><th>Canal</th><th>Segmento</th><th>Alcance</th><th>Beneficio</th><th>Mínimo</th><th>Prioridad</th><th>Vigencia</th><th>Estado</th><th></th></tr></thead>
+              <tbody id="reglas-body"></tbody>
+            </table></div>
+          </section>
+        </div>
+      </div>
+
+      <!-- ===== Pestaña COMPRAS Y PROVEEDORES ===== -->
+      <div id="tab-compras" class="tabpane">
+        <div class="panel compras-panel">
+          <div class="panel-head compras-head">
+            <div>
+              <h2>Compras y proveedores</h2>
+              <p class="subtle">Órdenes, recepciones y devoluciones actualizan el inventario y su kardex compartido.</p>
+            </div>
+            <div class="subtabs" role="tablist" aria-label="Secciones de compras">
+              <button class="subtab active" data-compras="ordenes" role="tab">Órdenes</button>
+              <button class="subtab" data-compras="proveedores" role="tab">Proveedores</button>
+            </div>
+          </div>
+
+          <section id="compras-ordenes" class="compras-seccion active">
+            <div class="toolbar toolbar-compras">
+              <form id="form-compras-filtros" class="toolbar toolbar-sin-margen">
+                <input id="inp-compra-q" class="inp" maxlength="160" placeholder="Folio, proveedor o referencia…" autocomplete="off">
+                <select id="sel-compra-estado" class="inp" aria-label="Filtrar órdenes por estado">
+                  <option value="">Todos los estados</option>
+                  <option value="EMITIDA">Emitida</option>
+                  <option value="PARCIAL">Recepción parcial</option>
+                  <option value="RECIBIDA">Recibida</option>
+                  <option value="CANCELADA">Cancelada</option>
+                </select>
+                <select id="sel-compra-proveedor-filtro" class="inp" aria-label="Filtrar órdenes por proveedor">
+                  <option value="">Todos los proveedores</option>
+                </select>
+                <button class="btn btn-outline" type="submit">Buscar</button>
+              </form>
+              <div class="toolbar-acciones">
+                <button id="btn-refrescar-compras" class="btn btn-outline" type="button">Actualizar</button>
+                <button id="btn-compra-nueva" class="btn btn-primary admin-only" type="button">Nueva orden</button>
+              </div>
+            </div>
+            <div class="tabla-scroll tabla-compras">
+              <table>
+                <thead><tr><th>Folio</th><th>Fecha</th><th>Proveedor</th><th>Referencia</th><th>Unidades</th><th>Total</th><th>Estado</th><th></th></tr></thead>
+                <tbody id="compras-body"></tbody>
+              </table>
+            </div>
+            <div class="paginacion-pedidos">
+              <button id="btn-compras-anterior" class="btn btn-outline" type="button">Anterior</button>
+              <span id="compras-pagina" class="subtle">Página 1</span>
+              <button id="btn-compras-siguiente" class="btn btn-outline" type="button">Siguiente</button>
+            </div>
+          </section>
+
+          <section id="compras-proveedores" class="compras-seccion">
+            <div class="toolbar toolbar-compras">
+              <form id="form-proveedores-filtros" class="toolbar toolbar-sin-margen">
+                <input id="inp-proveedor-q" class="inp" maxlength="160" placeholder="Nombre, RFC, contacto, teléfono…" autocomplete="off">
+                <label class="check check-filtro"><input id="chk-proveedores-inactivos" type="checkbox"> Incluir inactivos</label>
+                <button class="btn btn-outline" type="submit">Buscar</button>
+              </form>
+              <button id="btn-proveedor-nuevo" class="btn btn-primary admin-only" type="button">Nuevo proveedor</button>
+            </div>
+            <div class="tabla-scroll tabla-compras">
+              <table>
+                <thead><tr><th>Proveedor</th><th>RFC</th><th>Contacto</th><th>Teléfono</th><th>Correo</th><th>Estado</th><th></th></tr></thead>
+                <tbody id="proveedores-body"></tbody>
+              </table>
+            </div>
+            <div class="paginacion-pedidos">
+              <button id="btn-proveedores-anterior" class="btn btn-outline" type="button">Anterior</button>
+              <span id="proveedores-pagina" class="subtle">Página 1</span>
+              <button id="btn-proveedores-siguiente" class="btn btn-outline" type="button">Siguiente</button>
+            </div>
+          </section>
+        </div>
+      </div>
+
+      <!-- ===== Pestaña EDITORIAL ===== -->
+      <div id="tab-editorial" class="tabpane admin-only" role="tabpanel">
+        <div class="panel editorial-panel">
+          <div class="panel-head editorial-head">
+            <div>
+              <h2>Gestión editorial</h2>
+              <p class="subtle">Obras, colaboradores y contratos forman la base común del catálogo editorial.</p>
+            </div>
+            <div class="subtabs" role="tablist" aria-label="Secciones editoriales">
+              <button id="subtab-editorial-obras" class="subtab active" data-editorial="obras" role="tab" aria-selected="true" aria-controls="editorial-obras">Obras</button>
+              <button id="subtab-editorial-colaboradores" class="subtab" data-editorial="colaboradores" role="tab" aria-selected="false" aria-controls="editorial-colaboradores">Colaboradores</button>
+              <button id="subtab-editorial-contratos" class="subtab" data-editorial="contratos" role="tab" aria-selected="false" aria-controls="editorial-contratos">Contratos</button>
+              <button id="subtab-editorial-tirajes" class="subtab" data-editorial="tirajes" role="tab" aria-selected="false" aria-controls="editorial-tirajes">Tirajes</button>
+              <button id="subtab-editorial-regalias" class="subtab" data-editorial="regalias" role="tab" aria-selected="false" aria-controls="editorial-regalias">Regalías</button>
+              <button id="subtab-editorial-consignaciones" class="subtab" data-editorial="consignaciones" role="tab" aria-selected="false" aria-controls="editorial-consignaciones">Consignación</button>
+            </div>
+          </div>
+
+          <section id="editorial-obras" class="editorial-seccion active" role="tabpanel" aria-labelledby="subtab-editorial-obras">
+            <div class="toolbar toolbar-editorial">
+              <form id="form-editorial-obras-filtros" class="toolbar toolbar-sin-margen">
+                <input id="inp-editorial-obra-q" class="inp" maxlength="160" placeholder="Folio, título o colaborador…" autocomplete="off">
+                <select id="sel-editorial-obra-estado" class="inp" aria-label="Filtrar obras por estado">
+                  <option value="">Todos los estados</option>
+                  <option value="PROPUESTA">Propuesta</option>
+                  <option value="EVALUACION">Evaluación</option>
+                  <option value="CONTRATADA">Contratada</option>
+                  <option value="EDICION">Edición</option>
+                  <option value="DISENO">Diseño</option>
+                  <option value="IMPRESION">Impresión</option>
+                  <option value="PUBLICADA">Publicada</option>
+                  <option value="ARCHIVADA">Archivada</option>
+                </select>
+                <button class="btn btn-outline" type="submit">Buscar</button>
+              </form>
+              <div class="toolbar-acciones">
+                <button id="btn-refrescar-obras-editoriales" class="btn btn-outline" type="button">Actualizar</button>
+                <button id="btn-nueva-obra-editorial" class="btn btn-primary" type="button">Nueva obra</button>
+              </div>
+            </div>
+            <div class="tabla-scroll tabla-editorial"><table>
+              <thead><tr><th>Folio</th><th>Obra</th><th>Etapa</th><th>Responsable</th><th>Equipo</th><th>Ediciones</th><th>Contratos</th><th></th></tr></thead>
+              <tbody id="editorial-obras-body"></tbody>
+            </table></div>
+            <div class="paginacion-pedidos">
+              <button id="btn-obras-editoriales-anterior" class="btn btn-outline" type="button">Anterior</button>
+              <span id="obras-editoriales-pagina" class="subtle">Página 1</span>
+              <button id="btn-obras-editoriales-siguiente" class="btn btn-outline" type="button">Siguiente</button>
+            </div>
+          </section>
+
+          <section id="editorial-colaboradores" class="editorial-seccion" role="tabpanel" aria-labelledby="subtab-editorial-colaboradores">
+            <div class="toolbar toolbar-editorial">
+              <form id="form-editorial-colaboradores-filtros" class="toolbar toolbar-sin-margen">
+                <input id="inp-editorial-colaborador-q" class="inp" maxlength="160" placeholder="Nombre, correo o identificador fiscal…" autocomplete="off">
+                <label class="check check-filtro"><input id="chk-editorial-colaboradores-inactivos" type="checkbox"> Incluir inactivos</label>
+                <button class="btn btn-outline" type="submit">Buscar</button>
+              </form>
+              <div class="toolbar-acciones">
+                <button id="btn-refrescar-colaboradores-editoriales" class="btn btn-outline" type="button">Actualizar</button>
+                <button id="btn-nuevo-colaborador-editorial" class="btn btn-primary" type="button">Nuevo colaborador</button>
+              </div>
+            </div>
+            <div class="tabla-scroll tabla-editorial"><table>
+              <thead><tr><th>Nombre legal</th><th>Nombre público</th><th>Contacto</th><th>Obras</th><th>Contratos activos</th><th>Estado</th><th></th></tr></thead>
+              <tbody id="editorial-colaboradores-body"></tbody>
+            </table></div>
+            <div class="paginacion-pedidos">
+              <button id="btn-colaboradores-editoriales-anterior" class="btn btn-outline" type="button">Anterior</button>
+              <span id="colaboradores-editoriales-pagina" class="subtle">Página 1</span>
+              <button id="btn-colaboradores-editoriales-siguiente" class="btn btn-outline" type="button">Siguiente</button>
+            </div>
+          </section>
+
+          <section id="editorial-contratos" class="editorial-seccion" role="tabpanel" aria-labelledby="subtab-editorial-contratos">
+            <div class="toolbar toolbar-editorial">
+              <form id="form-editorial-contratos-filtros" class="toolbar toolbar-sin-margen">
+                <input id="inp-editorial-contrato-q" class="inp" maxlength="160" placeholder="Folio, obra, colaborador o derechos…" autocomplete="off">
+                <select id="sel-editorial-contrato-estado" class="inp" aria-label="Filtrar contratos por estado">
+                  <option value="">Todos los estados</option>
+                  <option value="BORRADOR">Borrador</option>
+                  <option value="VIGENTE">Vigente</option>
+                  <option value="SUSPENDIDO">Suspendido</option>
+                  <option value="TERMINADO">Terminado</option>
+                </select>
+                <button class="btn btn-outline" type="submit">Buscar</button>
+              </form>
+              <div class="toolbar-acciones">
+                <button id="btn-refrescar-contratos-editoriales" class="btn btn-outline" type="button">Actualizar</button>
+                <button id="btn-nuevo-contrato-editorial" class="btn btn-primary solo-admin" type="button">Nuevo contrato</button>
+              </div>
+            </div>
+            <div class="tabla-scroll tabla-editorial"><table>
+              <thead><tr><th>Folio</th><th>Obra</th><th>Colaborador</th><th>Tipo</th><th>Regalía</th><th>Vigencia</th><th>Estado</th><th></th></tr></thead>
+              <tbody id="editorial-contratos-body"></tbody>
+            </table></div>
+            <div class="paginacion-pedidos">
+              <button id="btn-contratos-editoriales-anterior" class="btn btn-outline" type="button">Anterior</button>
+              <span id="contratos-editoriales-pagina" class="subtle">Página 1</span>
+              <button id="btn-contratos-editoriales-siguiente" class="btn btn-outline" type="button">Siguiente</button>
+            </div>
+          </section>
+
+          <section id="editorial-tirajes" class="editorial-seccion" role="tabpanel" aria-labelledby="subtab-editorial-tirajes">
+            <div class="toolbar toolbar-editorial">
+              <form id="form-editorial-tirajes-filtros" class="toolbar toolbar-sin-margen">
+                <input id="inp-editorial-tiraje-q" class="inp" maxlength="160" placeholder="Folio, obra, SKU o ISBN…" autocomplete="off">
+                <select id="sel-editorial-tiraje-estado" class="inp" aria-label="Filtrar tirajes por estado">
+                  <option value="">Todos los estados</option>
+                  <option value="BORRADOR">Borrador</option>
+                  <option value="CONFIRMADO">Confirmado</option>
+                  <option value="CANCELADO">Cancelado</option>
+                </select>
+                <button class="btn btn-outline" type="submit">Buscar</button>
+              </form>
+              <div class="toolbar-acciones">
+                <button id="btn-refrescar-tirajes-editoriales" class="btn btn-outline" type="button">Actualizar</button>
+                <button id="btn-nuevo-tiraje-editorial" class="btn btn-primary" type="button">Nuevo tiraje</button>
+              </div>
+            </div>
+            <p class="notice">Confirmar un tiraje incorpora sus ejemplares al inventario y actualiza el costo unitario del producto.</p>
+            <div class="tabla-scroll tabla-editorial"><table>
+              <thead><tr><th>Folio</th><th>Programado</th><th>Obra</th><th>Edición</th><th>Ejemplares</th><th>Costos</th><th>Costo unitario</th><th>Estado</th><th></th></tr></thead>
+              <tbody id="editorial-tirajes-body"></tbody>
+            </table></div>
+            <div class="paginacion-pedidos">
+              <button id="btn-tirajes-editoriales-anterior" class="btn btn-outline" type="button">Anterior</button>
+              <span id="tirajes-editoriales-pagina" class="subtle">Página 1</span>
+              <button id="btn-tirajes-editoriales-siguiente" class="btn btn-outline" type="button">Siguiente</button>
+            </div>
+          </section>
+
+          <section id="editorial-regalias" class="editorial-seccion" role="tabpanel" aria-labelledby="subtab-editorial-regalias">
+            <div class="toolbar toolbar-editorial">
+              <form id="form-editorial-regalias-filtros" class="toolbar toolbar-sin-margen">
+                <input id="inp-editorial-regalia-q" class="inp" maxlength="160" placeholder="Folio, contrato, obra o colaborador…" autocomplete="off">
+                <select id="sel-editorial-regalia-estado" class="inp" aria-label="Filtrar liquidaciones por estado">
+                  <option value="">Todos los estados</option>
+                  <option value="BORRADOR">Borrador</option>
+                  <option value="EMITIDA">Emitida</option>
+                  <option value="PAGADA">Pagada</option>
+                  <option value="CANCELADA">Cancelada</option>
+                </select>
+                <button class="btn btn-outline" type="submit">Buscar</button>
+              </form>
+              <div class="toolbar-acciones">
+                <button id="btn-refrescar-regalias-editoriales" class="btn btn-outline" type="button">Actualizar</button>
+                <button id="btn-nueva-liquidacion-regalia" class="btn btn-primary solo-admin" type="button">Generar liquidación</button>
+              </div>
+            </div>
+            <h4 class="pedido-subtitulo">Estado de cuenta por contrato</h4>
+            <div class="tabla-scroll tabla-editorial-resumen"><table>
+              <thead><tr><th>Contrato</th><th>Colaborador</th><th>Obra</th><th>Anticipo pendiente</th><th>Regalía pendiente</th><th>Pagado</th><th>Saldo editorial</th></tr></thead>
+              <tbody id="editorial-regalias-estado-cuenta-body"></tbody>
+            </table></div>
+            <h4 class="pedido-subtitulo">Liquidaciones</h4>
+            <div class="tabla-scroll tabla-editorial"><table>
+              <thead><tr><th>Folio</th><th>Periodo</th><th>Contrato</th><th>Colaborador</th><th>Unidades</th><th>Regalía bruta</th><th>Pagable</th><th>Estado</th><th></th></tr></thead>
+              <tbody id="editorial-regalias-body"></tbody>
+            </table></div>
+            <div class="paginacion-pedidos">
+              <button id="btn-regalias-editoriales-anterior" class="btn btn-outline" type="button">Anterior</button>
+              <span id="regalias-editoriales-pagina" class="subtle">Página 1</span>
+              <button id="btn-regalias-editoriales-siguiente" class="btn btn-outline" type="button">Siguiente</button>
+            </div>
+          </section>
+
+          <section id="editorial-consignaciones" class="editorial-seccion" role="tabpanel" aria-labelledby="subtab-editorial-consignaciones">
+            <div class="toolbar toolbar-editorial">
+              <form id="form-editorial-consignaciones-filtros" class="toolbar toolbar-sin-margen">
+                <input id="inp-editorial-consignacion-q" class="inp" maxlength="160" placeholder="Folio, cliente o referencia…" autocomplete="off">
+                <select id="sel-editorial-consignacion-estado" class="inp" aria-label="Filtrar consignaciones por estado">
+                  <option value="">Todos los estados</option>
+                  <option value="BORRADOR">Borrador</option>
+                  <option value="ENVIADA">Enviada</option>
+                  <option value="PARCIAL">Parcial</option>
+                  <option value="LIQUIDADA">Unidades liquidadas</option>
+                  <option value="CERRADA">Cerrada</option>
+                  <option value="CANCELADA">Cancelada</option>
+                </select>
+                <select id="sel-editorial-consignacion-tipo" class="inp" aria-label="Filtrar por tipo de consignatario">
+                  <option value="">Todos los tipos</option>
+                  <option value="LIBRERIA">Librería</option>
+                  <option value="DISTRIBUIDOR">Distribuidor</option>
+                  <option value="INSTITUCION">Institución</option>
+                </select>
+                <button class="btn btn-outline" type="submit">Buscar</button>
+              </form>
+              <div class="toolbar-acciones">
+                <button id="btn-refrescar-consignaciones-editoriales" class="btn btn-outline" type="button">Actualizar</button>
+                <button id="btn-nueva-consignacion-editorial" class="btn btn-primary" type="button">Nueva consignación</button>
+              </div>
+            </div>
+            <p class="notice">La existencia consignada sigue siendo propiedad de la editorial, pero deja de estar disponible en tienda. “Unidades liquidadas” significa vendidas o devueltas, no pago recibido.</p>
+            <div class="tabla-scroll tabla-editorial"><table>
+              <thead><tr><th>Folio</th><th>Creada</th><th>Consignatario</th><th>Tipo</th><th>Enviadas</th><th>Vendidas</th><th>Devueltas</th><th>Pendientes</th><th>Valor</th><th>Estado</th><th></th></tr></thead>
+              <tbody id="editorial-consignaciones-body"></tbody>
+            </table></div>
+            <div class="paginacion-pedidos">
+              <button id="btn-consignaciones-editoriales-anterior" class="btn btn-outline" type="button">Anterior</button>
+              <span id="consignaciones-editoriales-pagina" class="subtle">Página 1</span>
+              <button id="btn-consignaciones-editoriales-siguiente" class="btn btn-outline" type="button">Siguiente</button>
+            </div>
+          </section>
+        </div>
+      </div>
+
+      <!-- ===== Pestaña PEDIDOS ===== -->
+      <div id="tab-pedidos" class="tabpane">
+        <div class="panel pedidos-panel">
+          <div class="panel-head">
+            <div>
+              <h2>Pedidos</h2>
+              <p class="subtle">Reservas de la tienda y pedidos internos, listos para preparar o cobrar en la caja seleccionada.</p>
+            </div>
+            <button id="btn-refrescar-pedidos" class="btn btn-outline" type="button">Actualizar</button>
+          </div>
+          <form id="form-pedidos-filtros" class="toolbar pedido-filtros">
+            <input id="inp-pedido-q" class="inp" maxlength="160" placeholder="Folio, cliente o teléfono…" autocomplete="off">
+            <select id="sel-pedido-estado" class="inp" aria-label="Filtrar pedidos por estado">
+              <option value="">Todos los estados</option>
+              <option value="RESERVADO">Reservado</option>
+              <option value="LISTO">Listo</option>
+              <option value="COMPLETADO">Completado</option>
+              <option value="CANCELADO">Cancelado</option>
+              <option value="EXPIRADO">Expirado</option>
+            </select>
+            <button class="btn btn-primary" type="submit">Buscar</button>
+          </form>
+          <div class="tabla-scroll tabla-pedidos">
+            <table>
+              <thead><tr><th>Folio</th><th>Fecha</th><th>Canal</th><th>Cliente</th><th>Entrega</th><th>Total</th><th>Estado</th><th></th></tr></thead>
+              <tbody id="pedidos-body"></tbody>
+            </table>
+          </div>
+          <div class="paginacion-pedidos">
+            <button id="btn-pedidos-anterior" class="btn btn-outline" type="button">Anterior</button>
+            <span id="pedidos-pagina" class="subtle">Página 1</span>
+            <button id="btn-pedidos-siguiente" class="btn btn-outline" type="button">Siguiente</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== Pestaña CLIENTES Y COTIZACIONES ===== -->
+      <div id="tab-clientes-cotizaciones" class="tabpane" role="tabpanel">
+        <div class="panel clientes-panel">
+          <div class="panel-head clientes-head">
+            <div>
+              <h2>Clientes y cotizaciones</h2>
+              <p class="subtle">Directorio, precios por segmento y cotizaciones que pueden convertirse en pedidos con reserva.</p>
+            </div>
+            <div class="subtabs" role="tablist" aria-label="Clientes y cotizaciones">
+              <button id="subtab-clientes" class="subtab active" data-clientes-seccion="clientes" role="tab" aria-selected="true" aria-controls="clientes-seccion-clientes">Directorio</button>
+              <button id="subtab-cotizaciones" class="subtab" data-clientes-seccion="cotizaciones" role="tab" aria-selected="false" aria-controls="clientes-seccion-cotizaciones">Cotizaciones</button>
+            </div>
+          </div>
+
+          <section id="clientes-seccion-clientes" class="clientes-seccion active" role="tabpanel" aria-labelledby="subtab-clientes">
+            <div class="toolbar toolbar-clientes">
+              <form id="form-clientes-filtros" class="toolbar toolbar-sin-margen">
+                <input id="inp-clientes-q" class="inp" maxlength="160" placeholder="Nombre, teléfono o correo…" autocomplete="off" aria-label="Buscar clientes">
+                <select id="sel-clientes-segmento" class="inp" aria-label="Filtrar clientes por segmento">
+                  <option value="">Todos los segmentos</option>
+                  <option value="PUBLICO">Precio público</option>
+                  <option value="MAYOREO">Mayoreo</option>
+                </select>
+                <select id="sel-clientes-tipo" class="inp admin-only" aria-label="Filtrar clientes por tipo comercial">
+                  <option value="">Todos los tipos</option>
+                  <option value="CONSUMIDOR">Consumidor</option>
+                  <option value="LIBRERIA">Librería</option>
+                  <option value="DISTRIBUIDOR">Distribuidor</option>
+                  <option value="INSTITUCION">Institución</option>
+                </select>
+                <label class="check check-filtro admin-only"><input id="chk-clientes-inactivos" type="checkbox"> Incluir inactivos</label>
+                <button class="btn btn-primary" type="submit">Buscar</button>
+              </form>
+              <div class="toolbar-acciones">
+                <button id="btn-refrescar-clientes" class="btn btn-outline" type="button">Actualizar</button>
+                <button id="btn-nuevo-cliente" class="btn btn-primary" type="button">Nuevo cliente</button>
+              </div>
+            </div>
+            <div class="tabla-scroll tabla-clientes">
+              <table>
+                <thead><tr><th>Cliente</th><th>Contacto</th><th>Tipo comercial</th><th>Segmento</th><th>Registro</th><th>Estado</th><th></th></tr></thead>
+                <tbody id="clientes-body"></tbody>
+              </table>
+            </div>
+            <div class="paginacion-pedidos">
+              <button id="btn-clientes-anterior" class="btn btn-outline" type="button">Anterior</button>
+              <span id="clientes-pagina" class="subtle">Página 1</span>
+              <button id="btn-clientes-siguiente" class="btn btn-outline" type="button">Siguiente</button>
+            </div>
+          </section>
+
+          <section id="clientes-seccion-cotizaciones" class="clientes-seccion" role="tabpanel" aria-labelledby="subtab-cotizaciones">
+            <div class="toolbar toolbar-clientes">
+              <form id="form-cotizaciones-filtros" class="toolbar toolbar-sin-margen">
+                <input id="inp-cotizaciones-q" class="inp" maxlength="160" placeholder="Folio, cliente, teléfono o correo…" autocomplete="off" aria-label="Buscar cotizaciones">
+                <select id="sel-cotizaciones-estado" class="inp" aria-label="Filtrar cotizaciones por estado">
+                  <option value="">Todos los estados</option>
+                  <option value="VIGENTE">Vigente</option>
+                  <option value="CONVERTIDA">Convertida</option>
+                  <option value="CANCELADA">Cancelada</option>
+                  <option value="VENCIDA">Vencida</option>
+                </select>
+                <button class="btn btn-primary" type="submit">Buscar</button>
+              </form>
+              <div class="toolbar-acciones">
+                <button id="btn-procesar-cotizaciones-vencidas" class="btn btn-outline admin-only" type="button">Procesar vencidas</button>
+                <button id="btn-refrescar-cotizaciones" class="btn btn-outline" type="button">Actualizar</button>
+              </div>
+            </div>
+            <p class="notice">Guardar una cotización no aparta existencias. La reserva se crea de forma atómica al convertirla en pedido.</p>
+            <div class="tabla-scroll tabla-cotizaciones">
+              <table>
+                <thead><tr><th>Folio</th><th>Fecha</th><th>Cliente</th><th>Segmento</th><th>Vigencia</th><th>Total</th><th>Estado</th><th>Pedido</th><th></th></tr></thead>
+                <tbody id="cotizaciones-body"></tbody>
+              </table>
+            </div>
+            <div class="paginacion-pedidos">
+              <button id="btn-cotizaciones-anterior" class="btn btn-outline" type="button">Anterior</button>
+              <span id="cotizaciones-pagina" class="subtle">Página 1</span>
+              <button id="btn-cotizaciones-siguiente" class="btn btn-outline" type="button">Siguiente</button>
+            </div>
+          </section>
+        </div>
+      </div>
+
+      <!-- ===== Pestaña CAJA ===== -->
+      <div id="tab-caja" class="tabpane">
+        <div class="caja-grid">
+          <div class="panel" id="panel-cerrada">
+            <h2>Apertura de caja</h2>
+            <div class="form-inline">
+              <label>Fondo inicial <input id="inp-fondo" class="inp" type="number" min="0" max="9999999999.99" step="0.01" value="500" required></label>
+              <button id="btn-apertura" class="btn btn-primary">Abrir caja</button>
+            </div>
+            <div id="aviso-corte-pendiente" class="notice hidden" role="status">
+              Hay un corte pendiente de confirmar. <button id="btn-recuperar-corte" class="btn btn-outline" type="button">Recuperar corte</button>
+            </div>
+            <div id="ultimo-corte" class="hidden"></div>
+          </div>
+          <div class="panel hidden" id="panel-resumen">
+            <h2>Resumen de la sesión</h2>
+            <p id="caja-aviso" class="notice hidden" role="status"></p>
+            <div id="resumen-caja" class="resumen"></div>
+            <div class="caja-acciones" id="grupo-movimientos">
+              <div class="form-inline">
+                <label>Ingreso <input id="inp-ingreso" class="inp" type="number" min="0.01" max="9999999999.99" step="0.01" placeholder="0.00"></label>
+                <input id="inp-ingreso-concepto" class="inp" maxlength="160" placeholder="Concepto del ingreso" style="max-width:180px">
+                <button id="btn-ingreso" class="btn btn-outline" type="button">Registrar ingreso</button>
+              </div>
+              <div class="form-inline">
+                <label>Retiro <input id="inp-retiro" class="inp" type="number" min="0.01" max="9999999999.99" step="0.01" placeholder="0.00"></label>
+                <input id="inp-retiro-concepto" class="inp" maxlength="160" placeholder="Concepto del retiro" style="max-width:180px">
+                <button id="btn-retiro" class="btn btn-outline" type="button">Registrar retiro</button>
+              </div>
+              <p id="movimiento-caja-aviso" class="notice hidden" role="status"></p>
+            </div>
+            <hr>
+            <div class="form-inline">
+              <label>Efectivo contado <input id="inp-contado" class="inp" type="number" min="0" max="9999999999.99" step="0.01"></label>
+              <button id="btn-corte" class="btn btn-danger" type="button">Realizar corte y cerrar caja</button>
+            </div>
+            <p id="resultado-corte" class="corte-msg"></p>
+          </div>
+          <div class="panel">
+            <h2>Últimos 20 movimientos</h2>
+            <div class="tabla-scroll tabla-alta">
+              <table>
+                <thead><tr><th>Hora</th><th>Tipo</th><th>Concepto</th><th>Responsable</th><th>Método</th><th>Monto</th></tr></thead>
+                <tbody id="mov-body"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== Pestaña VENTAS RECIENTES ===== -->
+      <div id="tab-ventas" class="tabpane">
+        <div class="panel">
+          <div class="panel-head">
+            <h2>Ventas recientes</h2>
+            <button id="btn-refrescar-ventas" class="btn btn-outline">Actualizar</button>
+          </div>
+          <div class="tabla-scroll tabla-alta">
+            <table>
+              <thead><tr><th>Folio</th><th>Fecha</th><th>Caja</th><th>Cajero</th><th>Total</th><th>Estado</th><th></th></tr></thead>
+              <tbody id="ventas-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== Pestaña REPORTES ===== -->
+      <div id="tab-reportes" class="tabpane admin-only">
+        <div class="panel reportes-panel">
+          <div class="panel-head reportes-head">
+            <div>
+              <h2>Reportes</h2>
+              <p class="subtle">Ventas, caja, inventario, compras y pedidos calculados desde los documentos y movimientos originales.</p>
+            </div>
+            <div class="subtabs" role="tablist" aria-label="Tipos de reporte">
+              <button id="subtab-reportes-ventas" class="subtab active" data-reportes="ventas" role="tab" aria-selected="true" aria-controls="reportes-ventas">Ventas</button>
+              <button id="subtab-reportes-inventario" class="subtab" data-reportes="inventario" role="tab" aria-selected="false" aria-controls="reportes-inventario">Inventario</button>
+              <button id="subtab-reportes-compras" class="subtab" data-reportes="compras" role="tab" aria-selected="false" aria-controls="reportes-compras">Compras</button>
+              <button id="subtab-reportes-pedidos" class="subtab" data-reportes="pedidos" role="tab" aria-selected="false" aria-controls="reportes-pedidos">Pedidos</button>
+              <button id="subtab-reportes-caja" class="subtab" data-reportes="caja" role="tab" aria-selected="false" aria-controls="reportes-caja">Caja</button>
+            </div>
+          </div>
+
+          <div class="reportes-controles">
+            <form id="form-reportes-periodo" class="toolbar toolbar-sin-margen reportes-periodo">
+              <label>Desde<input id="reporte-desde" class="inp" type="date" required></label>
+              <label>Hasta<input id="reporte-hasta" class="inp" type="date" required></label>
+              <button class="btn btn-primary" type="submit">Aplicar periodo</button>
+            </form>
+            <div class="toolbar-acciones">
+              <button id="btn-reportes-actualizar" class="btn btn-outline" type="button">Actualizar</button>
+              <button id="btn-reportes-exportar" class="btn btn-outline" type="button">Exportar CSV</button>
+            </div>
+          </div>
+          <p id="reportes-nota-periodo" class="notice">Desde y hasta incluyen los días indicados. Las fechas se interpretan en la zona horaria de este dispositivo.</p>
+          <p id="reportes-estado" class="subtle" role="status"></p>
+          <p id="reportes-error" class="form-error" role="alert"></p>
+
+          <section id="reportes-ventas" class="reportes-seccion active" role="tabpanel" aria-labelledby="subtab-reportes-ventas">
+            <form id="form-reporte-ventas" class="toolbar reporte-filtros">
+              <select id="reporte-ventas-caja" class="inp" aria-label="Caja"><option value="">Todas las cajas</option></select>
+              <select id="reporte-ventas-usuario" class="inp" aria-label="Usuario del evento"><option value="">Todos los usuarios</option></select>
+              <select id="reporte-ventas-metodo" class="inp" aria-label="Método de pago">
+                <option value="">Todos los métodos</option><option value="EFECTIVO">Efectivo</option><option value="TARJETA">Tarjeta</option><option value="TRANSFERENCIA">Transferencia</option>
+              </select>
+              <select id="reporte-ventas-canal" class="inp" aria-label="Canal"><option value="">Todos los canales</option><option value="POS">Punto de venta</option><option value="WEB">Tienda en línea</option><option value="CONSIGNACION">Consignación</option></select>
+              <button class="btn btn-outline" type="submit">Filtrar</button>
+            </form>
+            <div id="reporte-ventas-resumen" class="reportes-metricas"></div>
+            <div class="reportes-doble">
+              <section><h3>Por canal</h3><div class="tabla-scroll"><table><thead><tr><th>Canal</th><th>Ventas</th><th>Bruto</th><th>Reversos</th><th>Neto</th></tr></thead><tbody id="reporte-ventas-canales-body"></tbody></table></div></section>
+              <section><h3>Por método</h3><div class="tabla-scroll"><table><thead><tr><th>Método</th><th>Ventas</th><th>Bruto</th><th>Reversos</th><th>Neto</th></tr></thead><tbody id="reporte-ventas-metodos-body"></tbody></table></div></section>
+            </div>
+            <h3>Comportamiento diario</h3>
+            <div class="tabla-scroll tabla-reportes"><table><thead><tr><th>Fecha</th><th>Ventas</th><th>Bruto</th><th>Cancelado</th><th>Devuelto</th><th>Neto</th></tr></thead><tbody id="reporte-ventas-dias-body"></tbody></table></div>
+            <h3>Libros con mayor importe neto</h3>
+            <div class="tabla-scroll tabla-reportes"><table><thead><tr><th>SKU / libro</th><th>Vendidas</th><th>Canceladas</th><th>Devueltas</th><th>Unidades netas</th><th>Importe neto</th></tr></thead><tbody id="reporte-ventas-productos-body"></tbody></table></div>
+            <h3>Eventos conciliables</h3>
+            <div class="tabla-scroll tabla-reportes"><table><thead><tr><th>Fecha</th><th>Tipo</th><th>Folio</th><th>Canal</th><th>Caja</th><th>Usuario</th><th>Método</th><th>Importe neto</th></tr></thead><tbody id="reporte-ventas-body"></tbody></table></div>
+            <div class="paginacion-pedidos"><button id="btn-reporte-ventas-anterior" class="btn btn-outline" type="button">Anterior</button><span id="reporte-ventas-pagina" class="subtle">Página 1</span><button id="btn-reporte-ventas-siguiente" class="btn btn-outline" type="button">Siguiente</button></div>
+          </section>
+
+          <section id="reportes-inventario" class="reportes-seccion" role="tabpanel" aria-labelledby="subtab-reportes-inventario">
+            <form id="form-reporte-inventario" class="toolbar reporte-filtros">
+              <input id="reporte-inventario-q" class="inp" maxlength="160" placeholder="SKU, ISBN, título, autor o editorial…">
+              <select id="reporte-inventario-categoria" class="inp"><option value="">Todas las categorías</option></select>
+              <select id="reporte-inventario-estado" class="inp"><option value="">Todos los saldos</option><option value="BAJO_MINIMO">Con reposición sugerida</option><option value="SIN_EXISTENCIA">Sin existencia en tienda</option><option value="CON_RESERVA">Con reserva</option><option value="CON_CONSIGNACION">Con existencia consignada</option><option value="SIN_POLITICA">Sin política</option></select>
+              <select id="reporte-inventario-proveedor" class="inp"><option value="">Todos los proveedores</option></select>
+              <select id="reporte-inventario-activo" class="inp"><option value="">Activos e inactivos</option><option value="true">Sólo activos</option><option value="false">Sólo inactivos</option></select>
+              <select id="reporte-inventario-publicado" class="inp"><option value="">Publicados y no publicados</option><option value="true">Publicados en línea</option><option value="false">No publicados</option></select>
+              <button class="btn btn-outline" type="submit">Filtrar</button>
+            </form>
+            <p class="notice">Esta sección es una fotografía actual; el periodo no modifica sus saldos ni valuaciones.</p>
+            <div id="reporte-inventario-resumen" class="reportes-metricas"></div>
+            <div class="tabla-scroll tabla-reportes"><table><thead><tr><th>Libro</th><th>En tienda</th><th>Reservado</th><th>Consignado</th><th>Disponible</th><th>Total propio</th><th>En tránsito</th><th>Mín. / objetivo</th><th>Sugerido</th><th>Valor propio a costo</th><th>Valor disponible a precio</th></tr></thead><tbody id="reporte-inventario-body"></tbody></table></div>
+            <div class="paginacion-pedidos"><button id="btn-reporte-inventario-anterior" class="btn btn-outline" type="button">Anterior</button><span id="reporte-inventario-pagina" class="subtle">Página 1</span><button id="btn-reporte-inventario-siguiente" class="btn btn-outline" type="button">Siguiente</button></div>
+          </section>
+
+          <section id="reportes-compras" class="reportes-seccion" role="tabpanel" aria-labelledby="subtab-reportes-compras">
+            <form id="form-reporte-compras" class="toolbar reporte-filtros"><select id="reporte-compras-proveedor" class="inp"><option value="">Todos los proveedores</option></select><button class="btn btn-outline" type="submit">Filtrar</button></form>
+            <div id="reporte-compras-resumen" class="reportes-metricas"></div>
+            <div id="reporte-compras-compromisos" class="notice"></div>
+            <div class="reportes-doble">
+              <section><h3>Por proveedor</h3><div class="tabla-scroll"><table><thead><tr><th>Proveedor</th><th>Recepciones</th><th>Recibido</th><th>Devuelto</th><th>Neto</th></tr></thead><tbody id="reporte-compras-proveedores-body"></tbody></table></div></section>
+              <section><h3>Por libro</h3><div class="tabla-scroll"><table><thead><tr><th>Libro</th><th>Recibidas</th><th>Devueltas</th><th>Neto</th><th>Costo neto</th></tr></thead><tbody id="reporte-compras-productos-body"></tbody></table></div></section>
+            </div>
+            <h3>Recepciones y devoluciones</h3>
+            <div class="tabla-scroll tabla-reportes"><table><thead><tr><th>Fecha</th><th>Tipo</th><th>Folio</th><th>Orden</th><th>Proveedor</th><th>Usuario</th><th>Documento</th><th>Total neto</th></tr></thead><tbody id="reporte-compras-body"></tbody></table></div>
+            <div class="paginacion-pedidos"><button id="btn-reporte-compras-anterior" class="btn btn-outline" type="button">Anterior</button><span id="reporte-compras-pagina" class="subtle">Página 1</span><button id="btn-reporte-compras-siguiente" class="btn btn-outline" type="button">Siguiente</button></div>
+          </section>
+
+          <section id="reportes-pedidos" class="reportes-seccion" role="tabpanel" aria-labelledby="subtab-reportes-pedidos">
+            <form id="form-reporte-pedidos" class="toolbar reporte-filtros">
+              <select id="reporte-pedidos-canal" class="inp"><option value="">Todos los canales</option><option value="WEB">Tienda en línea</option><option value="INTERNO">Pedido interno</option></select>
+              <select id="reporte-pedidos-estado" class="inp"><option value="">Todos los estados</option><option value="RESERVADO">Reservado</option><option value="LISTO">Listo</option><option value="COMPLETADO">Completado</option><option value="CANCELADO">Cancelado</option><option value="EXPIRADO">Expirado</option></select>
+              <select id="reporte-pedidos-entrega" class="inp"><option value="">Todos los tipos de entrega</option><option value="RECOLECCION">Recolección</option><option value="ENVIO">Envío</option></select>
+              <button class="btn btn-outline" type="submit">Filtrar</button>
+            </form>
+            <p class="notice">El importe solicitado de un pedido no se considera ingreso hasta que exista una venta vinculada.</p>
+            <div id="reporte-pedidos-resumen" class="reportes-metricas"></div>
+            <div class="reportes-doble">
+              <section><h3>Estado actual</h3><div class="tabla-scroll"><table><thead><tr><th>Estado</th><th>Pedidos</th><th>Importe solicitado</th></tr></thead><tbody id="reporte-pedidos-estados-body"></tbody></table></div></section>
+              <section><h3>Por canal</h3><div class="tabla-scroll"><table><thead><tr><th>Canal</th><th>Pedidos</th><th>Completados</th><th>Importe solicitado</th></tr></thead><tbody id="reporte-pedidos-canales-body"></tbody></table></div></section>
+            </div>
+            <h3>Pedidos creados en el periodo</h3>
+            <div class="tabla-scroll tabla-reportes"><table><thead><tr><th>Fecha</th><th>Folio</th><th>Canal</th><th>Cliente</th><th>Entrega</th><th>Unidades</th><th>Reservadas</th><th>Importe</th><th>Estado</th><th>Venta</th></tr></thead><tbody id="reporte-pedidos-body"></tbody></table></div>
+            <div class="paginacion-pedidos"><button id="btn-reporte-pedidos-anterior" class="btn btn-outline" type="button">Anterior</button><span id="reporte-pedidos-pagina" class="subtle">Página 1</span><button id="btn-reporte-pedidos-siguiente" class="btn btn-outline" type="button">Siguiente</button></div>
+          </section>
+
+          <section id="reportes-caja" class="reportes-seccion" role="tabpanel" aria-labelledby="subtab-reportes-caja">
+            <form id="form-reporte-caja" class="toolbar reporte-filtros">
+              <select id="reporte-caja-caja" class="inp"><option value="">Todas las cajas</option></select>
+              <select id="reporte-caja-usuario" class="inp"><option value="">Todos los actores</option></select>
+              <select id="reporte-caja-operador" class="inp"><option value="">Todos los operadores de sesión</option></select>
+              <button class="btn btn-outline" type="submit">Filtrar</button>
+            </form>
+            <div id="reporte-caja-resumen" class="reportes-metricas"></div>
+            <div class="reportes-doble">
+              <section><h3>Por caja y actor</h3><div class="tabla-scroll"><table><thead><tr><th>Caja / actor</th><th>Ventas</th><th>Reversos</th><th>Ingresos</th><th>Retiros</th><th>Flujo efectivo</th></tr></thead><tbody id="reporte-caja-grupos-body"></tbody></table></div></section>
+              <section><h3>Sesiones abiertas</h3><div class="tabla-scroll"><table><thead><tr><th>Caja</th><th>Operador</th><th>Apertura</th><th>Fondo</th></tr></thead><tbody id="reporte-caja-abiertas-body"></tbody></table></div></section>
+            </div>
+            <h3>Cortes del periodo</h3>
+            <div class="tabla-scroll tabla-reportes"><table><thead><tr><th>Fecha</th><th>Caja</th><th>Operador</th><th>Responsable</th><th>Esperado</th><th>Contado</th><th>Diferencia</th></tr></thead><tbody id="reporte-caja-cortes-body"></tbody></table></div>
+            <h3>Movimientos de caja</h3>
+            <div class="tabla-scroll tabla-reportes"><table><thead><tr><th>Fecha</th><th>Tipo</th><th>Caja</th><th>Usuario</th><th>Método</th><th>Concepto</th><th>Monto</th></tr></thead><tbody id="reporte-caja-body"></tbody></table></div>
+            <div class="paginacion-pedidos"><button id="btn-reporte-caja-anterior" class="btn btn-outline" type="button">Anterior</button><span id="reporte-caja-pagina" class="subtle">Página 1</span><button id="btn-reporte-caja-siguiente" class="btn btn-outline" type="button">Siguiente</button></div>
+          </section>
+        </div>
+      </div>
+    </main>
+  </section>
+
+  <!-- ======== MODAL COBRO ======== -->
+  <div class="modal" id="modal-cobro" role="dialog" aria-modal="true" aria-label="Cobro">
+    <div class="modal-card">
+      <div class="modal-head"><h3>Cobrar venta</h3><button class="modal-x" data-close>×</button></div>
+      <div class="modal-body">
+        <div class="cobro-total" id="cobro-total">$0.00</div>
+        <div class="seg">
+          <button class="seg-btn active" data-metodo="EFECTIVO">💵 Efectivo</button>
+          <button class="seg-btn" data-metodo="TARJETA">💳 Tarjeta</button>
+          <button class="seg-btn" data-metodo="TRANSFERENCIA">🏦 Transferencia</button>
+        </div>
+        <div id="pago-efectivo">
+          <label class="lbl">Monto recibido</label>
+          <input id="inp-recibido" class="inp inp-lg" type="number" min="0" max="9999999999.99" step="0.01" inputmode="decimal">
+          <div class="quick" id="quick-cash"></div>
+          <div class="cambio-linea"><span>Cambio:</span><strong id="lbl-cambio">$0.00</strong></div>
+        </div>
+        <div id="pago-no-efectivo" class="hidden">
+          <p id="nota-pago-no-efectivo" class="nota-terminal"></p>
+        </div>
+        <p id="cobro-error" class="form-error"></p>
+      </div>
+      <div class="modal-foot">
+        <button class="btn btn-ghost" data-close>Cancelar</button>
+        <button id="btn-confirmar-pago" class="btn btn-primary btn-lg">Confirmar pago</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======== MODAL TICKET ======== -->
+  <div class="modal" id="modal-ticket" role="dialog" aria-modal="true" aria-label="Ticket">
+    <div class="modal-card modal-tik">
+      <div class="modal-head"><h3 id="ticket-titulo">Ticket</h3><button class="modal-x" data-close>×</button></div>
+      <div class="modal-body"><div class="ticket" id="ticket-body"></div></div>
+      <div class="modal-foot">
+        <button class="btn btn-outline" id="btn-print">🖨 Imprimir</button>
+        <button class="btn btn-primary" data-close>Nueva venta</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======== MODAL VENTA / DEVOLUCIÓN ======== -->
+  <div class="modal" id="modal-venta" role="dialog" aria-modal="true" aria-label="Detalle de venta">
+    <div class="modal-card modal-wide">
+      <div class="modal-head"><h3 id="venta-modal-titulo">Detalle de venta</h3><button class="modal-x" data-close>×</button></div>
+      <div class="modal-body">
+        <div id="venta-resumen" class="venta-resumen"></div>
+        <div class="tabla-scroll">
+          <table>
+            <thead><tr><th>Producto</th><th>Vendido</th><th>Devuelto</th><th>Disponible</th><th id="th-devolver">Devolver</th></tr></thead>
+            <tbody id="venta-detalle-body"></tbody>
+          </table>
+        </div>
+        <section id="postventa-controles" class="postventa-controles">
+          <label class="lbl" for="inp-postventa-motivo">Motivo</label>
+          <input id="inp-postventa-motivo" class="inp" maxlength="160" placeholder="Describe el motivo de la operación">
+          <p id="postventa-ayuda" class="notice" role="status"></p>
+          <p id="postventa-error" class="form-error" role="alert"></p>
+        </section>
+      </div>
+      <div class="modal-foot" id="postventa-acciones">
+        <button id="btn-cancelar-registrada" class="btn btn-danger">Cancelar venta completa</button>
+        <button id="btn-devolver" class="btn btn-primary">Registrar devolución</button>
+        <button class="btn btn-ghost" data-close>Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======== MODAL PEDIDO ======== -->
+  <div class="modal" id="modal-pedido" role="dialog" aria-modal="true" aria-label="Detalle de pedido">
+    <div class="modal-card modal-pedido">
+      <div class="modal-head"><h3 id="pedido-modal-titulo">Detalle de pedido</h3><button class="modal-x" data-close>×</button></div>
+      <div class="modal-body">
+        <div id="pedido-resumen" class="pedido-resumen"></div>
+        <div id="pedido-contacto" class="pedido-contacto"></div>
+        <a id="pedido-whatsapp-cliente" class="btn btn-whatsapp hidden" href="#" target="_blank" rel="noopener noreferrer">Avisar al cliente por WhatsApp</a>
+        <p id="pedido-notas" class="notice hidden"></p>
+
+        <h4 class="pedido-subtitulo">Artículos reservados</h4>
+        <div class="tabla-scroll">
+          <table>
+            <thead><tr><th>SKU / producto</th><th>Cant.</th><th>Lista</th><th>Descuento</th><th>Precio</th><th>Importe</th><th>Reserva</th></tr></thead>
+            <tbody id="pedido-detalle-body"></tbody>
+          </table>
+        </div>
+
+        <div class="pedido-secciones">
+          <section id="pedido-gestion" class="pedido-seccion admin-only">
+            <h4>Preparación y cancelación</h4>
+            <label class="lbl" for="inp-pedido-motivo">Motivo de cancelación</label>
+            <input id="inp-pedido-motivo" class="inp" maxlength="240" placeholder="Obligatorio al cancelar">
+            <div class="pedido-acciones">
+              <button id="btn-pedido-listo" class="btn btn-outline" type="button">Marcar listo</button>
+              <button id="btn-pedido-cancelar" class="btn btn-danger" type="button">Cancelar pedido</button>
+            </div>
+          </section>
+
+          <section class="pedido-seccion">
+            <h4>Cobro en caja</h4>
+            <p id="pedido-caja-aviso" class="subtle"></p>
+            <div class="pedido-pago-grid">
+              <label class="lbl" for="sel-pedido-metodo">Método
+                <select id="sel-pedido-metodo" class="inp">
+                  <option value="EFECTIVO">Efectivo</option>
+                  <option value="TARJETA">Tarjeta</option>
+                  <option value="TRANSFERENCIA">Transferencia</option>
+                </select>
+              </label>
+              <label id="pedido-pago-efectivo" class="lbl" for="inp-pedido-recibido">Recibido
+                <input id="inp-pedido-recibido" class="inp" type="number" min="0" step="0.01" placeholder="0.00">
+              </label>
+            </div>
+            <p id="pedido-cambio" class="resultado-ajuste" role="status"></p>
+            <button id="btn-cobrar-pedido" class="btn btn-primary btn-block" type="button">Cobrar pedido</button>
+          </section>
+        </div>
+
+        <p id="pedido-operacion-aviso" class="notice hidden" role="status"></p>
+        <p id="pedido-error" class="form-error" role="alert"></p>
+
+        <details class="pedido-historial">
+          <summary>Historial de estados</summary>
+          <div class="tabla-scroll">
+            <table>
+              <thead><tr><th>Fecha</th><th>Cambio</th><th>Motivo</th><th>Actor</th></tr></thead>
+              <tbody id="pedido-transiciones-body"></tbody>
+            </table>
+          </div>
+        </details>
+      </div>
+      <div class="modal-foot"><button class="btn btn-ghost" data-close>Cerrar</button></div>
+    </div>
+  </div>
+
+  <!-- ======== MODAL AJUSTE DE INVENTARIO ======== -->
+  <div class="modal" id="modal-ajuste-inventario" role="dialog" aria-modal="true" aria-label="Ajuste de inventario">
+    <div class="modal-card">
+      <div class="modal-head"><h3 id="ajuste-inventario-titulo">Ajustar inventario</h3><button class="modal-x" data-close>×</button></div>
+      <div class="modal-body">
+        <div id="ajuste-inventario-saldos" class="inventario-saldos"></div>
+        <div class="ajuste-grid">
+          <label class="lbl" for="inp-ajuste-delta">Unidades a ajustar
+            <input id="inp-ajuste-delta" class="inp" type="number" step="1" placeholder="+5 o -2">
+          </label>
+          <label class="lbl" for="inp-ajuste-motivo">Motivo
+            <input id="inp-ajuste-motivo" class="inp" maxlength="240" placeholder="Motivo obligatorio">
+          </label>
+        </div>
+        <p class="notice">Usa un número positivo para entrada y uno negativo para salida. Las unidades reservadas no pueden retirarse.</p>
+        <p id="ajuste-inventario-resultante" class="resultado-ajuste" role="status"></p>
+        <p id="ajuste-inventario-error" class="form-error" role="alert"></p>
+      </div>
+      <div class="modal-foot">
+        <button class="btn btn-ghost" data-close>Cerrar</button>
+        <button id="btn-confirmar-ajuste" class="btn btn-primary">Confirmar ajuste</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======== MODAL KARDEX ======== -->
+  <div class="modal" id="modal-kardex" role="dialog" aria-modal="true" aria-label="Kardex de inventario">
+    <div class="modal-card modal-kardex">
+      <div class="modal-head"><h3 id="kardex-titulo">Kardex</h3><button class="modal-x" data-close>×</button></div>
+      <div class="modal-body">
+        <div id="kardex-saldos" class="inventario-saldos"></div>
+        <div class="tabla-scroll tabla-alta">
+          <table>
+            <thead><tr><th>Fecha</th><th>Tipo</th><th>Δ tienda</th><th>Δ reservado</th><th>Δ consignado</th><th>En tienda</th><th>Reservado</th><th>Consignado</th><th>Disponible</th><th>Motivo / referencia</th><th>Usuario</th></tr></thead>
+            <tbody id="kardex-body"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="modal-foot">
+        <button id="btn-kardex-anteriores" class="btn btn-outline hidden">Cargar anteriores</button>
+        <button class="btn btn-ghost" data-close>Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======== MODAL PRODUCTO Y PUBLICACIÓN ======== -->
+  <div class="modal" id="modal-producto" role="dialog" aria-modal="true" aria-label="Producto del catálogo">
+    <div class="modal-card modal-catalogo">
+      <div class="modal-head"><h3 id="producto-modal-titulo">Producto</h3><button class="modal-x" data-close>×</button></div>
+      <div class="modal-body">
+        <form id="form-producto" class="form-grid" novalidate>
+          <label>SKU<input id="producto-sku" class="inp" maxlength="24" required></label>
+          <label>Código de barras<input id="producto-codigo" class="inp" maxlength="30"></label>
+          <label>ISBN<input id="producto-isbn" class="inp" maxlength="17"></label>
+          <label>ISBN normalizado<input id="producto-isbn-normalizado" class="inp" readonly aria-describedby="producto-isbn-normalizado-ayuda"><small id="producto-isbn-normalizado-ayuda" class="campo-ayuda">Se calcula automáticamente.</small></label>
+          <label class="span-2">Título<input id="producto-titulo" class="inp" maxlength="160" required></label>
+          <label class="span-2">Subtítulo<input id="producto-subtitulo" class="inp" maxlength="240"></label>
+          <label class="span-2">Autor para búsqueda y POS<input id="producto-autor" class="inp" maxlength="1000" readonly><small class="campo-ayuda">Se genera a partir de la lista de autores.</small></label>
+          <label>Editorial<input id="producto-editorial" class="inp" maxlength="120"></label>
+          <label>Categoría<select id="producto-categoria" class="inp"><option value="">Sin categoría</option></select></label>
+          <fieldset class="form-seccion span-2">
+            <legend>Ficha bibliográfica</legend>
+            <div class="form-grid">
+              <label>Edición<input id="producto-edicion" class="inp" maxlength="80" placeholder="2.ª edición"></label>
+              <label>Año de publicación<input id="producto-anio-publicacion" class="inp" type="number" min="1000" max="9999" step="1"></label>
+              <label>Idioma<input id="producto-idioma" class="inp" maxlength="60" placeholder="Español"></label>
+              <label>Número de páginas<input id="producto-numero-paginas" class="inp" type="number" min="1" step="1"></label>
+              <label>Encuadernación<input id="producto-encuadernacion" class="inp" maxlength="80" placeholder="Pasta blanda"></label>
+              <label>Formato<input id="producto-formato" class="inp" maxlength="80" placeholder="Impreso"></label>
+              <label>Colección<input id="producto-coleccion" class="inp" maxlength="120"></label>
+              <label>Serie<input id="producto-serie" class="inp" maxlength="120"></label>
+              <label>Volumen<input id="producto-volumen" class="inp" maxlength="40"></label>
+            </div>
+          </fieldset>
+          <fieldset class="form-seccion span-2">
+            <legend>Contribuyentes y materias</legend>
+            <p class="campo-ayuda lista-ayuda">Separa cada nombre con <strong>|</strong>. El orden capturado se conserva.</p>
+            <div class="form-grid">
+              <label class="span-2">Autores<input id="producto-autores" class="inp" maxlength="4000" placeholder="Autora principal | Coautor"></label>
+              <label class="span-2">Traductores<input id="producto-traductores" class="inp" maxlength="4000" placeholder="Nombre del traductor"></label>
+              <label class="span-2">Ilustradores<input id="producto-ilustradores" class="inp" maxlength="4000" placeholder="Nombre del ilustrador"></label>
+              <label class="span-2">Editores<input id="producto-editores" class="inp" maxlength="4000" placeholder="Nombre del editor"></label>
+              <label class="span-2">Materias<input id="producto-materias" class="inp" maxlength="4000" placeholder="Narrativa | Literatura mexicana"></label>
+            </div>
+          </fieldset>
+          <label>Precio lista<input id="producto-precio" class="inp" type="number" min="0" max="999999" step="0.01" required></label>
+          <label class="admin-only">Costo<input id="producto-costo" class="inp" type="number" min="0" max="999999" step="0.01" required></label>
+          <label>IVA %<input id="producto-iva" class="inp" type="number" min="0" max="100" step="0.01" required></label>
+          <label id="grupo-producto-stock">Existencia inicial<input id="producto-stock" class="inp" type="number" min="0" step="1"></label>
+          <label class="span-2">Slug para tienda<input id="producto-slug" class="inp" maxlength="180" placeholder="titulo-del-libro"></label>
+          <label class="span-2">Descripción comercial<textarea id="producto-descripcion" class="inp textarea" maxlength="10000" rows="4"></textarea></label>
+          <label class="check span-2"><input id="producto-activo" type="checkbox" checked> Producto activo</label>
+        </form>
+        <section id="producto-imagenes-seccion" class="imagenes-seccion hidden">
+          <div class="section-head"><div><h4>Imágenes comerciales</h4><p class="subtle">Solo direcciones http o https. Se requiere una principal para publicar.</p></div></div>
+          <div id="producto-imagenes-lista" class="imagenes-lista"></div>
+          <form id="form-producto-imagen" class="imagen-form admin-only" novalidate>
+            <input id="imagen-url" class="inp span-2" type="url" placeholder="https://sitio.com/portada.jpg" required>
+            <input id="imagen-alt" class="inp" maxlength="180" placeholder="Texto alternativo" required>
+            <input id="imagen-orden" class="inp" type="number" min="0" step="1" value="0" aria-label="Orden">
+            <label class="check"><input id="imagen-principal" type="checkbox"> Principal</label>
+            <button id="btn-agregar-imagen" class="btn btn-outline" type="submit">Agregar imagen</button>
+          </form>
+        </section>
+        <section id="producto-publicacion-seccion" class="publicacion-box hidden">
+          <div><strong id="producto-publicacion-estado">No publicado</strong><p class="subtle">La publicación controla si el producto será visible en la tienda.</p></div>
+          <button id="btn-producto-publicacion" class="btn btn-outline admin-only" type="button">Publicar</button>
+        </section>
+        <p id="producto-error" class="form-error" role="alert"></p>
+      </div>
+      <div class="modal-foot"><button class="btn btn-ghost" data-close>Cerrar</button><button id="btn-guardar-producto" class="btn btn-primary admin-only" type="submit" form="form-producto">Guardar producto</button></div>
+    </div>
+  </div>
+
+  <!-- ======== MODAL IMPORTACIÓN DE CATÁLOGO ======== -->
+  <div class="modal" id="modal-importacion-productos" role="dialog" aria-modal="true" aria-labelledby="importacion-productos-titulo">
+    <div class="modal-card modal-importacion-productos">
+      <div class="modal-head"><h3 id="importacion-productos-titulo">Importar catálogo desde CSV</h3><button class="modal-x" data-close aria-label="Cerrar">×</button></div>
+      <div class="modal-body">
+        <form id="form-importacion-productos" novalidate>
+          <label class="archivo-csv-label" for="importacion-productos-archivo">Archivo CSV en UTF-8</label>
+          <input id="importacion-productos-archivo" class="inp" type="file" accept=".csv,text/csv" required aria-describedby="importacion-productos-ayuda">
+          <p id="importacion-productos-ayuda" class="notice">La importación crea productos o actualiza coincidencias por SKU. Una celda vacía conserva el dato existente. No modifica existencias, reservas, publicación, imágenes, URL ni estado activo.</p>
+          <p id="importacion-productos-archivo-info" class="subtle" role="status">Selecciona un archivo de hasta 2 MiB.</p>
+        </form>
+
+        <section id="importacion-productos-preview" class="importacion-preview hidden" aria-labelledby="importacion-productos-preview-titulo">
+          <div class="section-head">
+            <div><h4 id="importacion-productos-preview-titulo">Previsualización del servidor</h4><p id="importacion-productos-estado" class="subtle" role="status"></p></div>
+          </div>
+          <div id="importacion-productos-resumen" class="importacion-resumen" aria-label="Resumen de la importación"></div>
+          <div class="toolbar importacion-filtros">
+            <label for="sel-importacion-productos-resultado">Mostrar</label>
+            <select id="sel-importacion-productos-resultado" class="inp">
+              <option value="TODAS">Todas las filas</option>
+              <option value="CREAR">Por crear</option>
+              <option value="ACTUALIZAR">Por actualizar</option>
+              <option value="SIN_CAMBIOS">Sin cambios</option>
+              <option value="RECHAZAR">Rechazadas</option>
+            </select>
+          </div>
+          <div class="tabla-scroll tabla-importacion-productos">
+            <table>
+              <thead><tr><th>Fila</th><th>Resultado</th><th>SKU / ISBN</th><th>Producto</th><th>Detalle</th></tr></thead>
+              <tbody id="importacion-productos-body"></tbody>
+            </table>
+          </div>
+          <div class="paginacion-pedidos">
+            <button id="btn-importacion-productos-anterior" class="btn btn-outline" type="button">Anterior</button>
+            <span id="importacion-productos-pagina" class="subtle">Página 1</span>
+            <button id="btn-importacion-productos-siguiente" class="btn btn-outline" type="button">Siguiente</button>
+          </div>
+          <label id="grupo-importacion-productos-omisiones" class="check importacion-omisiones hidden"><input id="chk-importacion-productos-omisiones" type="checkbox"> Entiendo que las filas rechazadas no se importarán.</label>
+        </section>
+        <p id="importacion-productos-error" class="form-error" role="alert"></p>
+      </div>
+      <div class="modal-foot importacion-productos-acciones">
+        <button class="btn btn-ghost" data-close type="button">Cerrar</button>
+        <button id="btn-reiniciar-importacion-productos" class="btn btn-outline hidden" type="button">Elegir otro archivo</button>
+        <button id="btn-previsualizar-importacion-productos" class="btn btn-primary admin-only" type="submit" form="form-importacion-productos">Previsualizar</button>
+        <button id="btn-confirmar-importacion-productos" class="btn btn-primary admin-only hidden" type="button">Confirmar importación</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======== MODAL CATEGORÍA ======== -->
+  <div class="modal" id="modal-categoria" role="dialog" aria-modal="true" aria-label="Categoría">
+    <div class="modal-card">
+      <div class="modal-head"><h3 id="categoria-modal-titulo">Categoría</h3><button class="modal-x" data-close>×</button></div>
+      <div class="modal-body"><form id="form-categoria" class="form-grid" novalidate>
+        <label>Nombre<input id="categoria-nombre" class="inp" maxlength="100" required></label>
+        <label>Slug<input id="categoria-slug" class="inp" maxlength="120" placeholder="novela-historica"></label>
+        <label>Orden<input id="categoria-orden" class="inp" type="number" min="0" step="1" value="0"></label>
+        <label class="check"><input id="categoria-activa" type="checkbox" checked> Categoría activa</label>
+        <label class="span-2">Descripción<textarea id="categoria-descripcion" class="inp textarea" maxlength="5000" rows="4"></textarea></label>
+      </form><p id="categoria-error" class="form-error" role="alert"></p></div>
+      <div class="modal-foot"><button class="btn btn-ghost" data-close>Cerrar</button><button id="btn-guardar-categoria" class="btn btn-primary admin-only" type="submit" form="form-categoria">Guardar categoría</button></div>
+    </div>
+  </div>
+
+  <!-- ======== MODAL REGLA DE PRECIO ======== -->
+  <div class="modal" id="modal-regla" role="dialog" aria-modal="true" aria-label="Regla de precio">
+    <div class="modal-card modal-catalogo">
+      <div class="modal-head"><h3 id="regla-modal-titulo">Regla de precio</h3><button class="modal-x" data-close>×</button></div>
+      <div class="modal-body"><form id="form-regla" class="form-grid" novalidate>
+        <label class="span-2">Nombre<input id="regla-nombre" class="inp" maxlength="120" required></label>
+        <label>Canal<select id="regla-canal" class="inp"><option value="AMBOS">POS y tienda</option><option value="POS">Solo POS</option><option value="WEB">Solo tienda</option></select></label>
+        <label>Segmento<select id="sel-regla-segmento" class="inp"><option value="TODOS">Público y mayoreo</option><option value="PUBLICO">Sólo precio público</option><option value="MAYOREO">Sólo mayoreo</option></select></label>
+        <label>Tipo<select id="regla-tipo" class="inp"><option value="PORCENTAJE">Porcentaje</option><option value="MONTO_FIJO">Monto fijo</option><option value="PRECIO_FIJO">Precio final</option></select></label>
+        <label>Valor<input id="regla-valor" class="inp" type="number" min="0" step="0.01" required></label>
+        <label>Alcance<select id="regla-alcance" class="inp"><option value="GLOBAL">Todos los productos</option><option value="PRODUCTO">Un producto</option><option value="CATEGORIA">Una categoría</option></select></label>
+        <label id="grupo-regla-producto" class="span-2 hidden">Producto<select id="regla-producto" class="inp"></select></label>
+        <label id="grupo-regla-categoria" class="span-2 hidden">Categoría<select id="regla-categoria" class="inp"></select></label>
+        <label>Cantidad mínima<input id="regla-cantidad" class="inp" type="number" min="1" step="1" value="1" required></label>
+        <label>Prioridad<input id="regla-prioridad" class="inp" type="number" step="1" value="0" required></label>
+        <label>Vigente desde<input id="regla-desde" class="inp" type="datetime-local"></label>
+        <label>Vigente hasta<input id="regla-hasta" class="inp" type="datetime-local"></label>
+        <label class="check span-2"><input id="regla-activa" type="checkbox" checked> Regla activa</label>
+      </form><p id="regla-error" class="form-error" role="alert"></p></div>
+      <div class="modal-foot"><button class="btn btn-ghost" data-close>Cerrar</button><button id="btn-guardar-regla" class="btn btn-primary admin-only" type="submit" form="form-regla">Guardar regla</button></div>
+    </div>
+  </div>
+
+  <!-- ======== MODAL PROVEEDOR ======== -->
+  <div class="modal" id="modal-proveedor" role="dialog" aria-modal="true" aria-label="Proveedor">
+    <div class="modal-card modal-catalogo">
+      <div class="modal-head"><h3 id="proveedor-modal-titulo">Proveedor</h3><button class="modal-x" data-close>×</button></div>
+      <div class="modal-body">
+        <form id="form-proveedor" class="form-grid" novalidate>
+          <label>Nombre comercial<input id="proveedor-nombre" class="inp" maxlength="160" required></label>
+          <label>Razón social<input id="proveedor-razon-social" class="inp" maxlength="180"></label>
+          <label>RFC<input id="proveedor-rfc" class="inp" maxlength="20" autocomplete="off"></label>
+          <label>Persona de contacto<input id="proveedor-contacto" class="inp" maxlength="120" autocomplete="name"></label>
+          <label>Teléfono<input id="proveedor-telefono" class="inp" maxlength="30" autocomplete="tel"></label>
+          <label>Correo electrónico<input id="proveedor-email" class="inp" type="email" maxlength="254" autocomplete="email"></label>
+          <label class="span-2">Dirección<textarea id="proveedor-direccion" class="inp textarea" maxlength="2000" rows="3"></textarea></label>
+          <label class="span-2">Notas<textarea id="proveedor-notas" class="inp textarea" maxlength="5000" rows="3"></textarea></label>
+          <label class="check span-2"><input id="proveedor-activo" type="checkbox" checked> Proveedor activo</label>
+        </form>
+        <p id="proveedor-error" class="form-error" role="alert"></p>
+      </div>
+      <div class="modal-foot"><button class="btn btn-ghost" data-close>Cerrar</button><button id="btn-guardar-proveedor" class="btn btn-primary admin-only" type="submit" form="form-proveedor">Guardar proveedor</button></div>
+    </div>
+  </div>
+
+  <!-- ======== MODAL ORDEN DE COMPRA ======== -->
+  <div class="modal" id="modal-orden-compra" role="dialog" aria-modal="true" aria-label="Orden de compra">
+    <div class="modal-card modal-compra">
+      <div class="modal-head"><h3 id="orden-compra-modal-titulo">Orden de compra</h3><button class="modal-x" data-close>×</button></div>
+      <div class="modal-body">
+        <section id="orden-compra-captura">
+          <form id="form-orden-compra" class="form-grid" novalidate>
+            <label>Proveedor<select id="orden-compra-proveedor" class="inp" required><option value="">Selecciona un proveedor</option></select></label>
+            <label>Referencia<input id="orden-compra-referencia" class="inp" maxlength="100" placeholder="Solicitud o referencia interna"></label>
+            <label class="span-2">Notas<textarea id="orden-compra-notas" class="inp textarea" maxlength="5000" rows="3"></textarea></label>
+          </form>
+          <div class="compra-agregar-producto">
+            <label class="lbl" for="inp-orden-producto-q">Agregar libros o productos</label>
+            <input id="inp-orden-producto-q" class="inp" maxlength="160" placeholder="Busca por título, SKU o ISBN…" autocomplete="off">
+            <div id="orden-producto-resultados" class="resultados compra-resultados"></div>
+          </div>
+          <div class="tabla-scroll">
+            <table>
+              <thead><tr><th>Producto</th><th>Cantidad</th><th>Costo unitario</th><th>IVA %</th><th>Subtotal</th><th></th></tr></thead>
+              <tbody id="orden-compra-detalle-body"></tbody>
+            </table>
+          </div>
+          <div class="compra-totales">
+            <span>Subtotal <strong id="orden-compra-subtotal">$0.00</strong></span>
+            <span>IVA <strong id="orden-compra-iva">$0.00</strong></span>
+            <span>Total <strong id="orden-compra-total">$0.00</strong></span>
+          </div>
+        </section>
+
+        <section id="orden-compra-consulta" class="hidden">
+          <div id="orden-compra-resumen" class="pedido-resumen compra-resumen"></div>
+          <p id="orden-compra-notas-consulta" class="notice hidden"></p>
+          <h4 class="pedido-subtitulo">Partidas ordenadas</h4>
+          <div class="tabla-scroll">
+            <table>
+              <thead><tr><th>Producto</th><th>Ordenado</th><th>Recibido</th><th>Devuelto</th><th>Pendiente</th><th>Neto</th><th>Costo</th><th>Total</th></tr></thead>
+              <tbody id="orden-compra-consulta-body"></tbody>
+            </table>
+          </div>
+          <div id="orden-compra-acciones" class="pedido-acciones compra-acciones admin-only">
+            <button id="btn-abrir-recepcion-compra" class="btn btn-primary" type="button">Registrar recepción</button>
+            <button id="btn-abrir-devolucion-proveedor" class="btn btn-outline" type="button">Devolver al proveedor</button>
+            <button id="btn-abrir-cancelacion-compra" class="btn btn-danger" type="button">Cancelar remanente</button>
+          </div>
+          <p id="orden-compra-operacion-aviso" class="notice hidden" role="status"></p>
+
+          <details class="pedido-historial" open>
+            <summary>Recepciones</summary>
+            <div class="tabla-scroll"><table>
+              <thead><tr><th>Folio</th><th>Fecha</th><th>Referencia</th><th>Unidades</th><th>Total</th><th>Usuario</th></tr></thead>
+              <tbody id="orden-compra-recepciones-body"></tbody>
+            </table></div>
+          </details>
+          <details class="pedido-historial">
+            <summary>Devoluciones al proveedor</summary>
+            <div class="tabla-scroll"><table>
+              <thead><tr><th>Folio</th><th>Fecha</th><th>Referencia</th><th>Motivo</th><th>Unidades</th><th>Total</th><th>Usuario</th></tr></thead>
+              <tbody id="orden-compra-devoluciones-body"></tbody>
+            </table></div>
+          </details>
+          <details class="pedido-historial">
+            <summary>Historial de estados</summary>
+            <div class="tabla-scroll"><table>
+              <thead><tr><th>Fecha</th><th>De</th><th>A</th><th>Motivo</th><th>Usuario</th></tr></thead>
+              <tbody id="orden-compra-transiciones-body"></tbody>
+            </table></div>
+          </details>
+        </section>
+        <p id="orden-compra-error" class="form-error" role="alert"></p>
+      </div>
+      <div class="modal-foot"><button class="btn btn-ghost" data-close>Cerrar</button><button id="btn-emitir-orden-compra" class="btn btn-primary admin-only" type="submit" form="form-orden-compra">Emitir orden</button></div>
+    </div>
+  </div>
+
+  <!-- ======== MODAL RECEPCIÓN DE COMPRA ======== -->
+  <div class="modal" id="modal-recepcion-compra" role="dialog" aria-modal="true" aria-label="Recepción de compra">
+    <div class="modal-card modal-compra-operacion">
+      <div class="modal-head"><h3 id="recepcion-compra-titulo">Registrar recepción</h3><button class="modal-x" data-close>×</button></div>
+      <div class="modal-body">
+        <div id="recepcion-compra-resumen" class="notice"></div>
+        <form id="form-recepcion-compra" class="form-grid" novalidate>
+          <label>Referencia del proveedor<input id="recepcion-compra-referencia" class="inp" maxlength="100" placeholder="Remisión o factura"></label>
+          <label class="span-2">Notas<textarea id="recepcion-compra-notas" class="inp textarea" maxlength="5000" rows="2"></textarea></label>
+        </form>
+        <div class="tabla-scroll">
+          <table>
+            <thead><tr><th>Producto</th><th>Pendiente</th><th>Recibir ahora</th><th>Costo real unitario</th></tr></thead>
+            <tbody id="recepcion-compra-body"></tbody>
+          </table>
+        </div>
+        <p class="subtle compra-ayuda">El costo real recibido se convertirá en el último costo vigente del producto.</p>
+        <p id="recepcion-compra-error" class="form-error" role="alert"></p>
+      </div>
+      <div class="modal-foot"><button class="btn btn-ghost" data-close>Cerrar</button><button id="btn-confirmar-recepcion-compra" class="btn btn-primary admin-only" type="submit" form="form-recepcion-compra">Confirmar recepción</button></div>
+    </div>
+  </div>
+
+  <!-- ======== MODAL DEVOLUCIÓN A PROVEEDOR ======== -->
+  <div class="modal" id="modal-devolucion-proveedor" role="dialog" aria-modal="true" aria-label="Devolución a proveedor">
+    <div class="modal-card modal-compra-operacion">
+      <div class="modal-head"><h3 id="devolucion-proveedor-titulo">Devolver al proveedor</h3><button class="modal-x" data-close>×</button></div>
+      <div class="modal-body">
+        <div id="devolucion-proveedor-resumen" class="notice"></div>
+        <form id="form-devolucion-proveedor" class="form-grid" novalidate>
+          <label class="span-2">Motivo<input id="devolucion-proveedor-motivo" class="inp" maxlength="240" required placeholder="Motivo obligatorio"></label>
+          <label>Referencia<input id="devolucion-proveedor-referencia" class="inp" maxlength="100" placeholder="Documento o autorización"></label>
+          <label class="span-2">Notas<textarea id="devolucion-proveedor-notas" class="inp textarea" maxlength="5000" rows="2"></textarea></label>
+        </form>
+        <div class="tabla-scroll">
+          <table>
+            <thead><tr><th>Recepción</th><th>Producto</th><th>Recibido</th><th>Devuelto</th><th>Disponible</th><th>Devolver ahora</th></tr></thead>
+            <tbody id="devolucion-proveedor-body"></tbody>
+          </table>
+        </div>
+        <p class="subtle compra-ayuda">La devolución sólo puede tomar existencia física no reservada.</p>
+        <p id="devolucion-proveedor-error" class="form-error" role="alert"></p>
+      </div>
+      <div class="modal-foot"><button class="btn btn-ghost" data-close>Cerrar</button><button id="btn-confirmar-devolucion-proveedor" class="btn btn-danger admin-only" type="submit" form="form-devolucion-proveedor">Confirmar devolución</button></div>
+    </div>
+  </div>
+
+  <!-- ======== MODAL CANCELACIÓN DE ORDEN ======== -->
+  <div class="modal" id="modal-cancelacion-compra" role="dialog" aria-modal="true" aria-label="Cancelación de orden de compra">
+    <div class="modal-card">
+      <div class="modal-head"><h3 id="cancelacion-compra-titulo">Cancelar remanente</h3><button class="modal-x" data-close>×</button></div>
+      <div class="modal-body">
+        <p id="cancelacion-compra-resumen" class="notice"></p>
+        <form id="form-cancelacion-compra" novalidate>
+          <label class="lbl" for="cancelacion-compra-motivo">Motivo</label>
+          <textarea id="cancelacion-compra-motivo" class="inp textarea" maxlength="240" rows="3" required placeholder="Explica por qué se cancela el remanente"></textarea>
+        </form>
+        <p id="cancelacion-compra-error" class="form-error" role="alert"></p>
+      </div>
+      <div class="modal-foot"><button class="btn btn-ghost" data-close>Cerrar</button><button id="btn-confirmar-cancelacion-compra" class="btn btn-danger admin-only" type="submit" form="form-cancelacion-compra">Cancelar remanente</button></div>
+    </div>
+  </div>
+
+  <!-- ======== MODAL POLÍTICA DE REPOSICIÓN ======== -->
+  <div class="modal" id="modal-politica-reposicion" role="dialog" aria-modal="true" aria-label="Política de reposición">
+    <div class="modal-card">
+      <div class="modal-head"><h3 id="politica-reposicion-titulo">Política de reposición</h3><button class="modal-x" data-close>×</button></div>
+      <div class="modal-body">
+        <div id="politica-reposicion-saldos" class="inventario-saldos"></div>
+        <form id="form-politica-reposicion" class="form-grid" novalidate>
+          <label>Stock mínimo<input id="politica-stock-minimo" class="inp" type="number" min="0" max="1000000" step="1" required></label>
+          <label>Stock objetivo<input id="politica-stock-objetivo" class="inp" type="number" min="0" max="1000000" step="1" required></label>
+          <label class="span-2">Proveedor preferido<select id="politica-proveedor" class="inp"><option value="">Sin proveedor preferido</option></select></label>
+          <label class="span-2">Motivo<input id="politica-reposicion-motivo" class="inp" maxlength="240" required placeholder="Ej. Ajuste por rotación mensual"></label>
+        </form>
+        <p class="notice">Usa mínimo 0 y objetivo 0 para desactivar la sugerencia de este producto.</p>
+        <p id="politica-reposicion-error" class="form-error" role="alert"></p>
+      </div>
+      <div class="modal-foot"><button class="btn btn-ghost" data-close>Cerrar</button><button id="btn-guardar-politica-reposicion" class="btn btn-primary" type="submit" form="form-politica-reposicion">Guardar política</button></div>
+    </div>
+  </div>
+
+  <!-- ======== MODAL NUEVO CONTEO ======== -->
+  <div class="modal" id="modal-nuevo-conteo" role="dialog" aria-modal="true" aria-label="Nuevo conteo de inventario">
+    <div class="modal-card modal-conteo">
+      <div class="modal-head"><h3>Nuevo conteo de inventario</h3><button class="modal-x" data-close>×</button></div>
+      <div class="modal-body">
+        <form id="form-nuevo-conteo" novalidate>
+          <label class="lbl" for="nuevo-conteo-notas">Nota del conteo</label>
+          <input id="nuevo-conteo-notas" class="inp" maxlength="5000" placeholder="Ej. Sección narrativa, estante A">
+          <div class="conteo-busqueda-producto">
+            <label class="lbl" for="nuevo-conteo-producto-q">Agregar productos</label>
+            <input id="nuevo-conteo-producto-q" class="inp" maxlength="160" placeholder="Busca por título, SKU o ISBN…" autocomplete="off">
+            <div id="nuevo-conteo-resultados" class="resultados conteo-resultados"></div>
+          </div>
+          <div class="tabla-scroll tabla-conteo-seleccion">
+            <table>
+              <thead><tr><th>SKU</th><th>Producto</th><th>Físico</th><th>Reservado</th><th></th></tr></thead>
+              <tbody id="nuevo-conteo-productos-body"></tbody>
+            </table>
+          </div>
+        </form>
+        <p id="nuevo-conteo-error" class="form-error" role="alert"></p>
+      </div>
+      <div class="modal-foot"><button class="btn btn-ghost" data-close>Cerrar</button><button id="btn-crear-conteo" class="btn btn-primary" type="submit" form="form-nuevo-conteo">Crear conteo</button></div>
+    </div>
+  </div>
+
+  <!-- ======== MODAL CAPTURA Y APLICACIÓN DE CONTEO ======== -->
+  <div class="modal" id="modal-conteo" role="dialog" aria-modal="true" aria-label="Conteo de inventario">
+    <div class="modal-card modal-conteo">
+      <div class="modal-head"><h3 id="conteo-modal-titulo">Conteo de inventario</h3><button class="modal-x" data-close>×</button></div>
+      <div class="modal-body">
+        <div id="conteo-resumen" class="resumen-grid conteo-resumen"></div>
+        <p id="conteo-aviso" class="notice"></p>
+        <form id="form-captura-conteo" novalidate>
+          <div class="tabla-scroll tabla-captura-conteo">
+            <table>
+              <thead><tr><th>Producto</th><th>Al abrir</th><th>Actual</th><th>Reservado</th><th>Contado</th><th>Diferencia</th><th>Captura</th></tr></thead>
+              <tbody id="conteo-detalles-body"></tbody>
+            </table>
+          </div>
+        </form>
+        <label class="lbl conteo-motivo" for="conteo-operacion-motivo">Motivo para aplicar o cancelar</label>
+        <input id="conteo-operacion-motivo" class="inp" maxlength="240" placeholder="Motivo obligatorio para finalizar">
+        <details class="pedido-historial">
+          <summary>Historial del conteo</summary>
+          <div class="tabla-scroll"><table>
+            <thead><tr><th>Fecha</th><th>De</th><th>A</th><th>Motivo</th><th>Usuario</th></tr></thead>
+            <tbody id="conteo-transiciones-body"></tbody>
+          </table></div>
+        </details>
+        <p id="conteo-error" class="form-error" role="alert"></p>
+      </div>
+      <div class="modal-foot conteo-modal-acciones">
+        <button class="btn btn-ghost" data-close>Cerrar</button>
+        <button id="btn-cancelar-conteo" class="btn btn-danger" type="button">Cancelar conteo</button>
+        <button id="btn-guardar-captura-conteo" class="btn btn-outline" type="submit" form="form-captura-conteo">Guardar captura</button>
+        <button id="btn-aplicar-conteo" class="btn btn-primary" type="button">Aplicar diferencias</button>
+      </div>
+    </div>
+  </div>
+  <!-- ======== MODAL CLIENTE ======== -->
+  <div class="modal" id="modal-cliente" role="dialog" aria-modal="true" aria-labelledby="cliente-modal-titulo">
+    <div class="modal-card modal-catalogo">
+      <div class="modal-head"><h3 id="cliente-modal-titulo">Nuevo cliente</h3><button class="modal-x" data-close type="button" aria-label="Cerrar">×</button></div>
+      <div class="modal-body">
+        <form id="form-cliente" class="form-grid" novalidate>
+          <input id="inp-cliente-id" type="hidden">
+          <label class="span-2">Nombre<input id="inp-cliente-nombre" class="inp" maxlength="120" autocomplete="name" required></label>
+          <label>Teléfono<input id="inp-cliente-telefono" class="inp" maxlength="30" autocomplete="tel" inputmode="tel"></label>
+          <label>Correo electrónico<input id="inp-cliente-email" class="inp" type="email" maxlength="254" autocomplete="email"></label>
+          <label id="cliente-segmento-wrap" class="admin-only">Segmento de precio<select id="sel-cliente-segmento" class="inp"><option value="PUBLICO">Precio público</option><option value="MAYOREO">Mayoreo</option></select></label>
+          <label id="cliente-tipo-wrap" class="admin-only">Tipo comercial<select id="sel-cliente-tipo" class="inp"><option value="CONSUMIDOR">Consumidor</option><option value="LIBRERIA">Librería</option><option value="DISTRIBUIDOR">Distribuidor</option><option value="INSTITUCION">Institución</option></select></label>
+          <label class="check admin-only"><input id="chk-cliente-activo" type="checkbox" checked> Cliente activo</label>
+          <label class="span-2">Dirección<textarea id="inp-cliente-direccion" class="inp textarea" maxlength="2000" rows="3" autocomplete="street-address"></textarea></label>
+          <label class="span-2">Notas<textarea id="inp-cliente-notas" class="inp textarea" maxlength="5000" rows="3"></textarea></label>
+        </form>
+        <p id="cliente-error" class="form-error" role="alert"></p>
+      </div>
+      <div class="modal-foot"><button class="btn btn-ghost" data-close type="button">Cerrar</button><button id="btn-guardar-cliente" class="btn btn-primary" type="submit" form="form-cliente">Guardar cliente</button></div>
+    </div>
+  </div>
+
+  <!-- ======== MODAL ALTA DE COTIZACIÓN ======== -->
+  <div class="modal" id="modal-cotizacion-alta" role="dialog" aria-modal="true" aria-label="Guardar cotización">
+    <div class="modal-card modal-catalogo">
+      <div class="modal-head"><h3>Guardar cotización</h3><button class="modal-x" data-close type="button" aria-label="Cerrar">×</button></div>
+      <div class="modal-body">
+        <p id="cotizacion-alta-resumen" class="cotizacion-alta-resumen" role="status">Selecciona un cliente registrado para guardar el carrito actual.</p>
+        <form id="form-cotizacion-alta" class="form-grid" novalidate>
+          <label class="span-2">Cliente<select id="cotizacion-alta-cliente" class="inp" required><option value="">Selecciona un cliente</option></select></label>
+          <label>Vigencia (días)<input id="inp-cotizacion-vigencia" class="inp" type="number" min="1" max="90" step="1" value="7" required></label>
+          <label class="span-2">Notas<textarea id="inp-cotizacion-notas" class="inp textarea" maxlength="5000" rows="3" placeholder="Condiciones o indicaciones para el cliente"></textarea></label>
+        </form>
+        <p class="notice">La cotización conserva sus precios, pero no reserva libros hasta convertirla en pedido.</p>
+        <p id="cotizacion-alta-error" class="form-error" role="alert"></p>
+      </div>
+      <div class="modal-foot"><button class="btn btn-ghost" data-close type="button">Cerrar</button><button id="btn-crear-cotizacion" class="btn btn-primary" type="submit" form="form-cotizacion-alta">Guardar cotización</button></div>
+    </div>
+  </div>
+
+  <!-- ======== MODAL DETALLE DE COTIZACIÓN ======== -->
+  <div class="modal" id="modal-cotizacion" role="dialog" aria-modal="true" aria-labelledby="cotizacion-modal-titulo">
+    <div class="modal-card modal-cotizacion">
+      <div class="modal-head"><h3 id="cotizacion-modal-titulo">Cotización</h3><button class="modal-x" data-close type="button" aria-label="Cerrar">×</button></div>
+      <div class="modal-body">
+        <div id="cotizacion-resumen" class="pedido-resumen"></div>
+        <div id="cotizacion-contacto" class="pedido-contacto"></div>
+        <p id="cotizacion-notas" class="notice hidden"></p>
+        <h4 class="pedido-subtitulo">Artículos cotizados</h4>
+        <div class="tabla-scroll tabla-cotizacion-detalle"><table>
+          <thead><tr><th>Producto</th><th>Cantidad</th><th>Lista</th><th>Descuento</th><th>Final</th><th>Importe</th></tr></thead>
+          <tbody id="cotizacion-detalle-body"></tbody>
+        </table></div>
+
+        <div id="cotizacion-gestion" class="cotizacion-gestion">
+          <section class="cotizacion-operacion">
+            <h4>Convertir en pedido</h4>
+            <p class="subtle">Al convertir se reservarán las existencias disponibles sin volver a calcular los precios.</p>
+            <label class="lbl" for="sel-cotizacion-entrega">Entrega</label>
+            <select id="sel-cotizacion-entrega" class="inp"><option value="RECOLECCION">Recolección en tienda</option><option value="ENVIO">Envío</option></select>
+            <button id="btn-convertir-cotizacion" class="btn btn-primary btn-block" type="button">Convertir y reservar</button>
+          </section>
+          <section class="cotizacion-operacion admin-only">
+            <h4>Cancelar cotización</h4>
+            <label class="lbl" for="inp-cotizacion-motivo">Motivo</label>
+            <input id="inp-cotizacion-motivo" class="inp" maxlength="240" placeholder="Motivo obligatorio">
+            <button id="btn-cancelar-cotizacion" class="btn btn-danger btn-block" type="button">Cancelar cotización</button>
+          </section>
+        </div>
+
+        <details class="pedido-historial">
+          <summary>Historial de la cotización</summary>
+          <div class="tabla-scroll"><table>
+            <thead><tr><th>Fecha</th><th>Cambio</th><th>Motivo</th><th>Usuario</th></tr></thead>
+            <tbody id="cotizacion-transiciones-body"></tbody>
+          </table></div>
+        </details>
+        <p id="cotizacion-error" class="form-error" role="alert"></p>
+      </div>
+      <div class="modal-foot"><button id="btn-cotizacion-ver-pedido" class="btn btn-outline hidden" type="button">Ver pedido</button><button class="btn btn-ghost" data-close type="button">Cerrar</button></div>
+    </div>
+  </div>
+
+  <!-- ======== MODALES EDITORIALES: OBRAS, EQUIPO Y CONTRATOS ======== -->
+  <div class="modal modal-editorial-protegido" id="modal-obra-editorial" role="dialog" aria-modal="true" aria-labelledby="obra-editorial-modal-titulo">
+    <div class="modal-card modal-catalogo">
+      <div class="modal-head"><h3 id="obra-editorial-modal-titulo">Nueva obra</h3><button class="modal-x" data-close type="button" aria-label="Cerrar">×</button></div>
+      <div class="modal-body">
+        <form id="form-obra-editorial" class="form-grid" novalidate>
+          <input id="inp-obra-editorial-id" type="hidden">
+          <label class="span-2">Título<input id="inp-obra-editorial-titulo" class="inp" maxlength="240" required></label>
+          <label class="span-2">Subtítulo<input id="inp-obra-editorial-subtitulo" class="inp" maxlength="240"></label>
+          <label>Idioma<input id="inp-obra-editorial-idioma" class="inp" maxlength="60" value="Español" required></label>
+          <label>Fecha de recepción<input id="inp-obra-editorial-recepcion" class="inp" type="date" required></label>
+          <label>Objetivo de publicación<input id="inp-obra-editorial-objetivo" class="inp" type="date"></label>
+          <label class="span-2">Sinopsis<textarea id="inp-obra-editorial-sinopsis" class="inp textarea" maxlength="20000" rows="5"></textarea></label>
+          <label class="span-2">Notas internas<textarea id="inp-obra-editorial-notas" class="inp textarea" maxlength="10000" rows="3"></textarea></label>
+        </form>
+        <p id="obra-editorial-error" class="form-error" role="alert"></p>
+      </div>
+      <div class="modal-foot"><button class="btn btn-ghost" data-close type="button">Cerrar</button><button id="btn-guardar-obra-editorial" class="btn btn-primary" type="submit" form="form-obra-editorial">Guardar obra</button></div>
+    </div>
+  </div>
+
+  <div class="modal modal-editorial-protegido" id="modal-obra-editorial-detalle" role="dialog" aria-modal="true" aria-labelledby="obra-editorial-detalle-titulo">
+    <div class="modal-card modal-editorial-detalle">
+      <div class="modal-head"><h3 id="obra-editorial-detalle-titulo">Detalle de obra</h3><button class="modal-x" data-close type="button" aria-label="Cerrar">×</button></div>
+      <div class="modal-body">
+        <div id="obra-editorial-resumen" class="pedido-resumen"></div>
+        <p id="obra-editorial-sinopsis" class="notice hidden"></p>
+        <div class="toolbar toolbar-end">
+          <button id="btn-editar-obra-editorial" class="btn btn-outline" type="button">Editar obra</button>
+          <button id="btn-transicionar-obra-editorial" class="btn btn-primary" type="button">Cambiar etapa</button>
+        </div>
+
+        <section class="editorial-bloque">
+          <h4>Equipo y créditos</h4>
+          <form id="form-vinculo-colaborador-obra" class="form-grid editorial-form-inline" novalidate>
+            <label>Colaborador<select id="sel-obra-colaborador" class="inp" required><option value="">Selecciona un colaborador</option></select></label>
+            <label>Rol<select id="sel-obra-colaborador-rol" class="inp"><option value="AUTOR">Autor</option><option value="TRADUCTOR">Traductor</option><option value="ILUSTRADOR">Ilustrador</option><option value="EDITOR">Editor</option><option value="CORRECTOR">Corrector</option><option value="COORDINADOR">Coordinador</option><option value="DISENADOR">Diseñador</option></select></label>
+            <label>Nombre del crédito<input id="inp-obra-colaborador-credito" class="inp" maxlength="160" placeholder="Opcional"></label>
+            <label>Orden del crédito<input id="inp-obra-colaborador-orden" class="inp" type="number" min="0" max="999" step="1" value="0"></label>
+            <label class="check"><input id="chk-obra-colaborador-publico" type="checkbox" checked> Mostrar crédito públicamente</label>
+            <label class="span-2">Notas<input id="inp-obra-colaborador-notas" class="inp" maxlength="5000"></label>
+            <div class="span-2 toolbar toolbar-end"><button id="btn-vincular-colaborador-obra" class="btn btn-outline" type="submit">Agregar al equipo</button></div>
+          </form>
+          <div class="tabla-scroll"><table>
+            <thead><tr><th>Rol</th><th>Colaborador</th><th>Crédito</th><th>Público</th><th></th></tr></thead>
+            <tbody id="obra-editorial-colaboradores-body"></tbody>
+          </table></div>
+        </section>
+
+        <section class="editorial-bloque">
+          <h4>Ediciones vinculadas al catálogo</h4>
+          <form id="form-vinculo-edicion-obra" class="form-grid editorial-form-inline" novalidate>
+            <label class="span-2">Producto<select id="sel-obra-edicion-producto" class="inp" required><option value="">Selecciona un producto</option></select></label>
+            <label class="span-2">Motivo<input id="inp-obra-edicion-motivo" class="inp" maxlength="500" placeholder="Motivo de la vinculación" required></label>
+            <div class="span-2 toolbar toolbar-end"><button id="btn-vincular-edicion-obra" class="btn btn-outline" type="submit">Vincular edición</button></div>
+          </form>
+          <div class="tabla-scroll"><table>
+            <thead><tr><th>SKU</th><th>Edición</th><th>ISBN</th><th>En tienda</th><th>En línea</th><th></th></tr></thead>
+            <tbody id="obra-editorial-ediciones-body"></tbody>
+          </table></div>
+        </section>
+
+        <section class="editorial-bloque">
+          <h4>Contratos de la obra</h4>
+          <div class="tabla-scroll"><table>
+            <thead><tr><th>Folio</th><th>Colaborador</th><th>Tipo</th><th>Regalía</th><th>Estado</th></tr></thead>
+            <tbody id="obra-editorial-contratos-body"></tbody>
+          </table></div>
+        </section>
+
+        <details class="pedido-historial">
+          <summary>Historial de etapas</summary>
+          <div class="tabla-scroll"><table>
+            <thead><tr><th>Fecha</th><th>Cambio</th><th>Motivo</th><th>Usuario</th></tr></thead>
+            <tbody id="obra-editorial-transiciones-body"></tbody>
+          </table></div>
+        </details>
+        <p id="obra-editorial-detalle-error" class="form-error" role="alert"></p>
+      </div>
+      <div class="modal-foot"><button class="btn btn-ghost" data-close type="button">Cerrar</button></div>
+    </div>
+  </div>
+
+  <div class="modal modal-editorial-protegido" id="modal-colaborador-editorial" role="dialog" aria-modal="true" aria-labelledby="colaborador-editorial-modal-titulo">
+    <div class="modal-card modal-catalogo">
+      <div class="modal-head"><h3 id="colaborador-editorial-modal-titulo">Nuevo colaborador</h3><button class="modal-x" data-close type="button" aria-label="Cerrar">×</button></div>
+      <div class="modal-body">
+        <form id="form-colaborador-editorial" class="form-grid" novalidate>
+          <input id="inp-colaborador-editorial-id" type="hidden">
+          <label>Nombre legal<input id="inp-colaborador-editorial-nombre-legal" class="inp" maxlength="160" required></label>
+          <label>Nombre público<input id="inp-colaborador-editorial-nombre-publico" class="inp" maxlength="160"></label>
+          <label>Correo electrónico<input id="inp-colaborador-editorial-email" class="inp" type="email" maxlength="254"></label>
+          <label>Teléfono<input id="inp-colaborador-editorial-telefono" class="inp" maxlength="30"></label>
+          <label class="span-2">Identificador fiscal<input id="inp-colaborador-editorial-fiscal" class="inp" maxlength="40"></label>
+          <label class="check"><input id="chk-colaborador-editorial-activo" type="checkbox" checked> Colaborador activo</label>
+          <label class="span-2">Notas<textarea id="inp-colaborador-editorial-notas" class="inp textarea" maxlength="5000" rows="3"></textarea></label>
+        </form>
+        <p id="colaborador-editorial-error" class="form-error" role="alert"></p>
+      </div>
+      <div class="modal-foot"><button class="btn btn-ghost" data-close type="button">Cerrar</button><button id="btn-guardar-colaborador-editorial" class="btn btn-primary" type="submit" form="form-colaborador-editorial">Guardar colaborador</button></div>
+    </div>
+  </div>
+
+  <div class="modal modal-editorial-protegido" id="modal-contrato-editorial" role="dialog" aria-modal="true" aria-labelledby="contrato-editorial-modal-titulo">
+    <div class="modal-card modal-editorial-detalle">
+      <div class="modal-head"><h3 id="contrato-editorial-modal-titulo">Nuevo contrato</h3><button class="modal-x" data-close type="button" aria-label="Cerrar">×</button></div>
+      <div class="modal-body">
+        <form id="form-contrato-editorial" class="form-grid" novalidate>
+          <input id="inp-contrato-editorial-id" type="hidden">
+          <label>Obra<select id="sel-contrato-editorial-obra" class="inp" required><option value="">Selecciona una obra</option></select></label>
+          <label>Colaborador del equipo<select id="sel-contrato-editorial-colaborador" class="inp" required><option value="">Selecciona un colaborador</option></select></label>
+          <label>Tipo<select id="sel-contrato-editorial-tipo" class="inp"><option value="EDICION">Edición</option><option value="CESION">Cesión</option><option value="LICENCIA">Licencia</option><option value="COLABORACION">Colaboración</option></select></label>
+          <label>Territorio<input id="inp-contrato-editorial-territorio" class="inp" maxlength="120" value="México" required></label>
+          <label>Idioma de derechos<input id="inp-contrato-editorial-idioma" class="inp" maxlength="80" value="Todos" required></label>
+          <label class="check"><input id="chk-contrato-editorial-exclusividad" type="checkbox"> Derechos exclusivos</label>
+          <label>Vigente desde<input id="inp-contrato-editorial-desde" class="inp" type="date" required></label>
+          <label>Vigente hasta<input id="inp-contrato-editorial-hasta" class="inp" type="date"></label>
+          <label>Base de regalía<select id="sel-contrato-editorial-base" class="inp"><option value="VENTA_NETA">Venta neta</option><option value="PRECIO_LISTA">Precio de lista</option></select></label>
+          <label>Regalía (%)<input id="inp-contrato-editorial-porcentaje" class="inp" type="number" min="0" max="100" step="0.0001" required></label>
+          <label>Anticipo<input id="inp-contrato-editorial-anticipo" class="inp" type="number" min="0" step="0.01" value="0" required></label>
+          <label>Moneda<input id="inp-contrato-editorial-moneda" class="inp" maxlength="3" value="MXN" required></label>
+          <label>Liquidación<select id="sel-contrato-editorial-periodicidad" class="inp"><option value="MENSUAL">Mensual</option><option value="TRIMESTRAL">Trimestral</option><option value="SEMESTRAL" selected>Semestral</option><option value="ANUAL">Anual</option><option value="UNICA">Única</option></select></label>
+          <label class="span-2">Derechos y alcance<textarea id="inp-contrato-editorial-derechos" class="inp textarea" maxlength="20000" rows="5" required></textarea></label>
+          <label class="span-2">Notas<textarea id="inp-contrato-editorial-notas" class="inp textarea" maxlength="10000" rows="3"></textarea></label>
+        </form>
+        <p class="notice">Sólo una persona administradora puede crear o modificar términos contractuales.</p>
+        <p id="contrato-editorial-error" class="form-error" role="alert"></p>
+      </div>
+      <div class="modal-foot"><button class="btn btn-ghost" data-close type="button">Cerrar</button><button id="btn-guardar-contrato-editorial" class="btn btn-primary solo-admin" type="submit" form="form-contrato-editorial">Guardar contrato</button></div>
+    </div>
+  </div>
+
+  <div class="modal modal-editorial-protegido" id="modal-contrato-editorial-detalle" role="dialog" aria-modal="true" aria-labelledby="contrato-editorial-detalle-titulo">
+    <div class="modal-card modal-editorial-detalle">
+      <div class="modal-head"><h3 id="contrato-editorial-detalle-titulo">Detalle de contrato</h3><button class="modal-x" data-close type="button" aria-label="Cerrar">×</button></div>
+      <div class="modal-body">
+        <div id="contrato-editorial-resumen" class="pedido-resumen"></div>
+        <h4 class="pedido-subtitulo">Derechos y alcance</h4>
+        <p id="contrato-editorial-derechos" class="notice"></p>
+        <div class="toolbar toolbar-end solo-admin">
+          <button id="btn-editar-contrato-editorial" class="btn btn-outline" type="button">Editar términos</button>
+          <button id="btn-transicionar-contrato-editorial" class="btn btn-primary" type="button">Cambiar estado</button>
+        </div>
+        <details class="pedido-historial" open>
+          <summary>Historial del contrato</summary>
+          <div class="tabla-scroll"><table>
+            <thead><tr><th>Fecha</th><th>Cambio</th><th>Motivo</th><th>Usuario</th></tr></thead>
+            <tbody id="contrato-editorial-transiciones-body"></tbody>
+          </table></div>
+        </details>
+        <p id="contrato-editorial-detalle-error" class="form-error" role="alert"></p>
+      </div>
+      <div class="modal-foot"><button class="btn btn-ghost" data-close type="button">Cerrar</button></div>
+    </div>
+  </div>
+
+  <div class="modal modal-editorial-protegido" id="modal-tiraje-editorial" role="dialog" aria-modal="true" aria-labelledby="tiraje-editorial-modal-titulo">
+    <div class="modal-card modal-editorial-detalle">
+      <div class="modal-head"><h3 id="tiraje-editorial-modal-titulo">Nuevo tiraje</h3><button class="modal-x" data-close type="button" aria-label="Cerrar">×</button></div>
+      <div class="modal-body">
+        <form id="form-tiraje-editorial" class="form-grid" novalidate>
+          <input id="inp-tiraje-editorial-id" type="hidden">
+          <label>Obra<select id="sel-tiraje-editorial-obra" class="inp" required><option value="">Selecciona una obra</option></select></label>
+          <label>Edición del catálogo<select id="sel-tiraje-editorial-producto" class="inp" required><option value="">Selecciona una edición</option></select></label>
+          <label>Ejemplares<input id="inp-tiraje-editorial-cantidad" class="inp" type="number" min="1" max="1000000" step="1" required></label>
+          <label>Fecha programada<input id="inp-tiraje-editorial-fecha" class="inp" type="date" required></label>
+          <label>Moneda<input id="inp-tiraje-editorial-moneda" class="inp" maxlength="3" value="MXN" required></label>
+          <label class="span-2">Notas<textarea id="inp-tiraje-editorial-notas" class="inp textarea" maxlength="10000" rows="3"></textarea></label>
+          <div id="tiraje-editorial-costo-inicial" class="span-2 form-seccion">
+            <h4>Costo inicial obligatorio</h4>
+            <div class="form-grid">
+              <label>Tipo<select id="sel-tiraje-costo-inicial-tipo" class="inp"><option value="PREPRENSA">Preprensa</option><option value="IMPRESION">Impresión</option><option value="PAPEL">Papel</option><option value="ENCUADERNACION">Encuadernación</option><option value="ACABADOS">Acabados</option><option value="TRANSPORTE">Transporte</option><option value="OTRO">Otro</option></select></label>
+              <label>Concepto<input id="inp-tiraje-costo-inicial-concepto" class="inp" maxlength="240"></label>
+              <label>Proveedor<select id="sel-tiraje-costo-inicial-proveedor" class="inp"><option value="">Sin proveedor</option></select></label>
+              <label>Referencia<input id="inp-tiraje-costo-inicial-referencia" class="inp" maxlength="100"></label>
+              <label>Monto<input id="inp-tiraje-costo-inicial-monto" class="inp" type="number" min="0.01" step="0.01"></label>
+            </div>
+          </div>
+        </form>
+        <p id="tiraje-editorial-error" class="form-error" role="alert"></p>
+      </div>
+      <div class="modal-foot"><button class="btn btn-ghost" data-close type="button">Cerrar</button><button id="btn-guardar-tiraje-editorial" class="btn btn-primary" type="submit" form="form-tiraje-editorial">Guardar tiraje</button></div>
+    </div>
+  </div>
+
+  <div class="modal modal-editorial-protegido" id="modal-tiraje-editorial-detalle" role="dialog" aria-modal="true" aria-labelledby="tiraje-editorial-detalle-titulo">
+    <div class="modal-card modal-editorial-detalle">
+      <div class="modal-head"><h3 id="tiraje-editorial-detalle-titulo">Detalle de tiraje</h3><button class="modal-x" data-close type="button" aria-label="Cerrar">×</button></div>
+      <div class="modal-body">
+        <div id="tiraje-editorial-resumen" class="pedido-resumen"></div>
+        <p id="tiraje-editorial-aviso" class="notice"></p>
+        <div class="toolbar toolbar-end">
+          <button id="btn-editar-tiraje-editorial" class="btn btn-outline" type="button">Editar tiraje</button>
+          <button id="btn-confirmar-tiraje-editorial" class="btn btn-primary" type="button">Confirmar e ingresar existencias</button>
+          <button id="btn-cancelar-tiraje-editorial" class="btn btn-danger" type="button">Cancelar tiraje</button>
+        </div>
+        <section id="tiraje-editorial-costos-bloque" class="editorial-bloque">
+          <h4>Costos de producción</h4>
+          <form id="form-costo-tiraje-editorial" class="form-grid editorial-form-inline" novalidate>
+            <input id="inp-costo-tiraje-editorial-id" type="hidden">
+            <label>Tipo<select id="sel-costo-tiraje-editorial-tipo" class="inp"><option value="PREPRENSA">Preprensa</option><option value="IMPRESION">Impresión</option><option value="PAPEL">Papel</option><option value="ENCUADERNACION">Encuadernación</option><option value="ACABADOS">Acabados</option><option value="TRANSPORTE">Transporte</option><option value="OTRO">Otro</option></select></label>
+            <label>Concepto<input id="inp-costo-tiraje-editorial-concepto" class="inp" maxlength="240" required></label>
+            <label>Proveedor<select id="sel-costo-tiraje-editorial-proveedor" class="inp"><option value="">Sin proveedor</option></select></label>
+            <label>Referencia<input id="inp-costo-tiraje-editorial-referencia" class="inp" maxlength="100"></label>
+            <label>Monto<input id="inp-costo-tiraje-editorial-monto" class="inp" type="number" min="0.01" step="0.01" required></label>
+            <div class="span-2 toolbar toolbar-end"><button id="btn-cancelar-edicion-costo-tiraje" class="btn btn-ghost hidden" type="button">Cancelar edición</button><button id="btn-guardar-costo-tiraje-editorial" class="btn btn-outline" type="submit">Agregar costo</button></div>
+          </form>
+          <div class="tabla-scroll"><table>
+            <thead><tr><th>Tipo</th><th>Concepto</th><th>Proveedor</th><th>Referencia</th><th>Monto</th><th></th></tr></thead>
+            <tbody id="tiraje-editorial-costos-body"></tbody>
+          </table></div>
+        </section>
+        <details class="pedido-historial">
+          <summary>Historial del tiraje</summary>
+          <div class="tabla-scroll"><table>
+            <thead><tr><th>Fecha</th><th>Cambio</th><th>Motivo</th><th>Usuario</th></tr></thead>
+            <tbody id="tiraje-editorial-transiciones-body"></tbody>
+          </table></div>
+        </details>
+        <p id="tiraje-editorial-detalle-error" class="form-error" role="alert"></p>
+      </div>
+      <div class="modal-foot"><button class="btn btn-ghost" data-close type="button">Cerrar</button></div>
+    </div>
+  </div>
+
+  <div class="modal modal-editorial-protegido" id="modal-liquidacion-regalia" role="dialog" aria-modal="true" aria-labelledby="liquidacion-regalia-modal-titulo">
+    <div class="modal-card modal-catalogo">
+      <div class="modal-head"><h3 id="liquidacion-regalia-modal-titulo">Generar liquidación de regalías</h3><button class="modal-x" data-close type="button" aria-label="Cerrar">×</button></div>
+      <div class="modal-body">
+        <form id="form-liquidacion-regalia" class="form-grid" novalidate>
+          <label class="span-2">Contrato<select id="sel-liquidacion-regalia-contrato" class="inp" required><option value="">Selecciona un contrato</option></select></label>
+          <label>Periodo desde<input id="inp-liquidacion-regalia-desde" class="inp" type="date" required></label>
+          <label>Periodo hasta, sin incluir<input id="inp-liquidacion-regalia-hasta" class="inp" type="date" required></label>
+          <label class="span-2">Zona horaria<input id="inp-liquidacion-regalia-zona" class="inp" maxlength="80" value="America/Mexico_City" required></label>
+          <label class="span-2">Notas<textarea id="inp-liquidacion-regalia-notas" class="inp textarea" maxlength="10000" rows="3"></textarea></label>
+        </form>
+        <p class="notice">El fin del periodo es exclusivo: una fecha “hasta” del 1 de julio incluye ventas anteriores a ese día.</p>
+        <p id="liquidacion-regalia-error" class="form-error" role="alert"></p>
+      </div>
+      <div class="modal-foot"><button class="btn btn-ghost" data-close type="button">Cerrar</button><button id="btn-generar-liquidacion-regalia" class="btn btn-primary solo-admin" type="submit" form="form-liquidacion-regalia">Generar liquidación</button></div>
+    </div>
+  </div>
+
+  <div class="modal modal-editorial-protegido" id="modal-liquidacion-regalia-detalle" role="dialog" aria-modal="true" aria-labelledby="liquidacion-regalia-detalle-titulo">
+    <div class="modal-card modal-editorial-detalle">
+      <div class="modal-head"><h3 id="liquidacion-regalia-detalle-titulo">Detalle de regalías</h3><button class="modal-x" data-close type="button" aria-label="Cerrar">×</button></div>
+      <div class="modal-body">
+        <div id="liquidacion-regalia-resumen" class="pedido-resumen"></div>
+        <p id="liquidacion-regalia-notas" class="notice hidden"></p>
+        <div class="toolbar toolbar-end solo-admin">
+          <button id="btn-transicionar-liquidacion-regalia" class="btn btn-primary" type="button">Cambiar estado</button>
+        </div>
+        <h4 class="pedido-subtitulo">Ventas consideradas</h4>
+        <div class="tabla-scroll tabla-regalias-detalle"><table>
+          <thead><tr><th>Fecha</th><th>Canal</th><th>Referencia</th><th>Producto</th><th>Unidades</th><th>Base</th><th>Porcentaje</th><th>Regalía</th></tr></thead>
+          <tbody id="liquidacion-regalia-detalle-body"></tbody>
+        </table></div>
+        <details class="pedido-historial">
+          <summary>Historial de la liquidación</summary>
+          <div class="tabla-scroll"><table>
+            <thead><tr><th>Fecha</th><th>Cambio</th><th>Motivo</th><th>Usuario</th></tr></thead>
+            <tbody id="liquidacion-regalia-transiciones-body"></tbody>
+          </table></div>
+        </details>
+        <p id="liquidacion-regalia-detalle-error" class="form-error" role="alert"></p>
+      </div>
+      <div class="modal-foot"><button class="btn btn-ghost" data-close type="button">Cerrar</button></div>
+    </div>
+  </div>
+
+  <div class="modal modal-editorial-protegido" id="modal-consignacion-editorial" role="dialog" aria-modal="true" aria-labelledby="consignacion-editorial-modal-titulo">
+    <div class="modal-card modal-editorial-detalle">
+      <div class="modal-head"><h3 id="consignacion-editorial-modal-titulo">Nueva consignación</h3><button class="modal-x" data-close type="button" aria-label="Cerrar">×</button></div>
+      <div class="modal-body">
+        <form id="form-consignacion-editorial" class="form-grid" novalidate>
+          <label class="span-2">Consignatario<select id="sel-consignacion-editorial-cliente" class="inp" required><option value="">Selecciona una librería, distribuidor o institución</option></select></label>
+          <label>Fecha de envío programada<input id="inp-consignacion-editorial-envio" class="inp" type="date" required></label>
+          <label>Fecha límite<input id="inp-consignacion-editorial-limite" class="inp" type="date"></label>
+          <label>Moneda<input id="inp-consignacion-editorial-moneda" class="inp" maxlength="3" value="MXN" required></label>
+          <label>Referencia<input id="inp-consignacion-editorial-referencia" class="inp" maxlength="120"></label>
+          <label class="span-2">Notas<textarea id="inp-consignacion-editorial-notas" class="inp textarea" maxlength="10000" rows="3"></textarea></label>
+          <div class="span-2 form-seccion">
+            <h4>Libros a consignar</h4>
+            <div class="form-grid">
+              <label class="span-2">Producto<select id="sel-consignacion-editorial-producto" class="inp"><option value="">Selecciona un producto</option></select></label>
+              <label>Cantidad<input id="inp-consignacion-editorial-cantidad" class="inp" type="number" min="1" max="999" step="1" value="1"></label>
+              <div class="toolbar toolbar-end"><button id="btn-agregar-linea-consignacion" class="btn btn-outline" type="button">Agregar libro</button></div>
+            </div>
+            <div class="tabla-scroll tabla-consignacion-lineas"><table>
+              <thead><tr><th>SKU</th><th>Producto</th><th>Disponible</th><th>Cantidad</th><th></th></tr></thead>
+              <tbody id="consignacion-editorial-lineas-body"></tbody>
+            </table></div>
+          </div>
+        </form>
+        <p class="notice">Los precios se cotizan en el servidor con las mismas reglas de mayoreo del POS. El inventario sólo se mueve al confirmar el envío.</p>
+        <p id="consignacion-editorial-error" class="form-error" role="alert"></p>
+      </div>
+      <div class="modal-foot"><button class="btn btn-ghost" data-close type="button">Cerrar</button><button id="btn-guardar-consignacion-editorial" class="btn btn-primary" type="submit" form="form-consignacion-editorial">Crear borrador</button></div>
+    </div>
+  </div>
+
+  <div class="modal modal-editorial-protegido" id="modal-consignacion-editorial-detalle" role="dialog" aria-modal="true" aria-labelledby="consignacion-editorial-detalle-titulo">
+    <div class="modal-card modal-editorial-detalle">
+      <div class="modal-head"><h3 id="consignacion-editorial-detalle-titulo">Detalle de consignación</h3><button class="modal-x" data-close type="button" aria-label="Cerrar">×</button></div>
+      <div class="modal-body">
+        <div id="consignacion-editorial-resumen" class="pedido-resumen"></div>
+        <p id="consignacion-editorial-aviso" class="notice"></p>
+        <div class="toolbar toolbar-end">
+          <button id="btn-enviar-consignacion-editorial" class="btn btn-primary" type="button">Confirmar envío</button>
+          <button id="btn-registrar-venta-consignacion" class="btn btn-outline" type="button">Reportar venta</button>
+          <button id="btn-registrar-devolucion-consignacion" class="btn btn-outline" type="button">Registrar devolución</button>
+          <button id="btn-cerrar-consignacion-editorial" class="btn btn-primary solo-admin" type="button">Cerrar expediente</button>
+          <button id="btn-cancelar-consignacion-editorial" class="btn btn-danger" type="button">Cancelar borrador</button>
+        </div>
+        <h4 class="pedido-subtitulo">Libros consignados</h4>
+        <div class="tabla-scroll tabla-consignacion-detalle"><table>
+          <thead><tr><th>SKU</th><th>Producto</th><th>Enviadas</th><th>Vendidas</th><th>Devueltas</th><th>Pendientes</th><th>Precio</th><th>Valor enviado</th><th>En tienda</th><th>Consignado total</th></tr></thead>
+          <tbody id="consignacion-editorial-detalle-body"></tbody>
+        </table></div>
+        <h4 class="pedido-subtitulo">Operaciones registradas</h4>
+        <div class="tabla-scroll"><table>
+          <thead><tr><th>Fecha</th><th>Tipo</th><th>Referencia</th><th>Unidades</th><th>Total</th><th>Motivo</th><th>Usuario</th></tr></thead>
+          <tbody id="consignacion-editorial-operaciones-body"></tbody>
+        </table></div>
+        <details class="pedido-historial">
+          <summary>Historial de estados</summary>
+          <div class="tabla-scroll"><table>
+            <thead><tr><th>Fecha</th><th>Cambio</th><th>Motivo</th><th>Usuario</th></tr></thead>
+            <tbody id="consignacion-editorial-transiciones-body"></tbody>
+          </table></div>
+        </details>
+        <p id="consignacion-editorial-detalle-error" class="form-error" role="alert"></p>
+      </div>
+      <div class="modal-foot"><button class="btn btn-ghost" data-close type="button">Cerrar</button></div>
+    </div>
+  </div>
+
+  <div class="modal modal-editorial-protegido" id="modal-operacion-consignacion" role="dialog" aria-modal="true" aria-labelledby="operacion-consignacion-titulo">
+    <div class="modal-card modal-catalogo">
+      <div class="modal-head"><h3 id="operacion-consignacion-titulo">Registrar operación</h3><button class="modal-x" data-close type="button" aria-label="Cerrar">×</button></div>
+      <div class="modal-body">
+        <form id="form-operacion-consignacion" class="form-grid" novalidate>
+          <input id="inp-operacion-consignacion-tipo" type="hidden">
+          <label class="span-2">Referencia<input id="inp-operacion-consignacion-referencia" class="inp" maxlength="160"></label>
+          <label class="span-2">Motivo<input id="inp-operacion-consignacion-motivo" class="inp" maxlength="500" required></label>
+          <div class="span-2 tabla-scroll tabla-consignacion-operacion"><table>
+            <thead><tr><th>Producto</th><th>Pendiente</th><th id="operacion-consignacion-cantidad-titulo">Cantidad</th></tr></thead>
+            <tbody id="operacion-consignacion-lineas-body"></tbody>
+          </table></div>
+        </form>
+        <p id="operacion-consignacion-error" class="form-error" role="alert"></p>
+      </div>
+      <div class="modal-foot"><button class="btn btn-ghost" data-close type="button">Cerrar</button><button id="btn-confirmar-operacion-consignacion" class="btn btn-primary" type="submit" form="form-operacion-consignacion">Registrar</button></div>
+    </div>
+  </div>
+
+  <div class="modal modal-editorial-protegido" id="modal-editorial-accion" role="dialog" aria-modal="true" aria-labelledby="editorial-accion-titulo">
+    <div class="modal-card">
+      <div class="modal-head"><h3 id="editorial-accion-titulo">Registrar cambio</h3><button class="modal-x" data-close type="button" aria-label="Cerrar">×</button></div>
+      <div class="modal-body">
+        <form id="form-editorial-accion" class="form-grid" novalidate>
+          <label id="editorial-accion-estado-wrap" class="span-2">Nuevo estado<select id="sel-editorial-accion-estado" class="inp"></select></label>
+          <label class="span-2">Motivo<input id="inp-editorial-accion-motivo" class="inp" maxlength="500" placeholder="Explica el motivo del cambio" required></label>
+          <label id="editorial-accion-referencia-wrap" class="span-2 hidden">Referencia<input id="inp-editorial-accion-referencia" class="inp" maxlength="160"></label>
+        </form>
+        <p id="editorial-accion-ayuda" class="notice hidden"></p>
+        <p id="editorial-accion-error" class="form-error" role="alert"></p>
+      </div>
+      <div class="modal-foot"><button class="btn btn-ghost" data-close type="button">Cerrar</button><button id="btn-confirmar-editorial-accion" class="btn btn-primary" type="submit" form="form-editorial-accion">Confirmar</button></div>
+    </div>
+  </div>
+
+  <div id="toasts" aria-live="polite"></div>
+  <div id="print-area" class="ticket" aria-hidden="true"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>

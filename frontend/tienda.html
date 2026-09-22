@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Catálogo y pedidos en línea de Librería REM.">
+  <title>Librería REM · Tienda en línea</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="tienda.css">
+</head>
+<body>
+  <a class="skip-link" href="#catalogo">Ir al catálogo</a>
+
+  <header class="store-header">
+    <a class="store-brand" href="tienda.html" aria-label="Inicio de Librería REM">
+      <span class="brand-icon" aria-hidden="true">📖</span>
+      <span><strong id="config-nombre">Librería REM</strong><small>Tienda en línea</small></span>
+    </a>
+    <div class="header-actions">
+      <button id="btn-consultar-pedido" class="button button-ghost" type="button">Consultar pedido</button>
+      <button id="btn-abrir-carrito" class="button button-primary cart-button" type="button" aria-controls="drawer-carrito">
+        Carrito <span id="carrito-badge" class="cart-badge" aria-label="0 artículos">0</span>
+      </button>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero" aria-labelledby="hero-titulo">
+      <div>
+        <p class="eyebrow">Lecturas para cada historia</p>
+        <h1 id="hero-titulo">Tu próxima lectura está aquí</h1>
+        <p>Consulta existencias reales, aparta tus libros y elige envío o recolección en tienda.</p>
+      </div>
+      <div id="config-entregas" class="delivery-note" aria-live="polite">Entrega y recolección disponibles.</div>
+    </section>
+
+    <section id="catalogo" class="catalog-section" aria-labelledby="catalogo-titulo">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">Catálogo</p>
+          <h2 id="catalogo-titulo">Libros disponibles</h2>
+        </div>
+        <form id="form-busqueda" class="search-form" role="search">
+          <label class="sr-only" for="inp-busqueda">Buscar libros</label>
+          <input id="inp-busqueda" class="field" type="search" maxlength="120" placeholder="Título, autor o ISBN">
+          <label class="sr-only" for="sel-categoria">Filtrar por categoría</label>
+          <select id="sel-categoria" class="field">
+            <option value="">Todas las categorías</option>
+          </select>
+          <button class="button button-primary" type="submit">Buscar</button>
+          <button id="btn-limpiar-busqueda" class="button button-ghost" type="button">Limpiar</button>
+        </form>
+      </div>
+
+      <p id="catalogo-estado" class="status-line" role="status">Cargando catálogo…</p>
+      <div id="productos-grid" class="product-grid" aria-live="polite"></div>
+      <nav class="pagination" aria-label="Páginas del catálogo">
+        <button id="btn-pagina-anterior" class="button button-outline" type="button">Anterior</button>
+        <span id="pagina-label">Página 1</span>
+        <button id="btn-pagina-siguiente" class="button button-outline" type="button">Siguiente</button>
+      </nav>
+    </section>
+  </main>
+
+  <footer class="store-footer">
+    <strong>Librería REM</strong>
+    <span>Precios y disponibilidad confirmados al crear el pedido.</span>
+  </footer>
+
+  <div id="drawer-carrito" class="overlay hidden" role="dialog" aria-modal="true" aria-labelledby="carrito-titulo">
+    <section class="drawer">
+      <header class="modal-header">
+        <div><p class="eyebrow">Tu selección</p><h2 id="carrito-titulo">Carrito</h2></div>
+        <button class="icon-button" type="button" data-close aria-label="Cerrar carrito">×</button>
+      </header>
+      <div class="drawer-body">
+        <div id="carrito-items" class="cart-items"></div>
+        <div class="quote-box">
+          <p id="carrito-cotizacion" class="status-line" role="status">El carrito está vacío.</p>
+          <button id="btn-reintentar-cotizacion" class="button button-link hidden" type="button">Reintentar cotización</button>
+          <div class="summary-row"><span>Descuento</span><strong id="carrito-descuento">$0.00</strong></div>
+          <div class="summary-row total"><span>Total</span><strong id="carrito-total">$0.00</strong></div>
+        </div>
+      </div>
+      <footer class="modal-footer">
+        <button class="button button-ghost" type="button" data-close>Seguir comprando</button>
+        <button id="btn-iniciar-checkout" class="button button-primary" type="button">Continuar pedido</button>
+      </footer>
+    </section>
+  </div>
+
+  <div id="modal-producto" class="overlay hidden" role="dialog" aria-modal="true" aria-labelledby="producto-modal-titulo">
+    <section class="modal-card product-modal">
+      <header class="modal-header">
+        <h2 id="producto-modal-titulo">Detalle del libro</h2>
+        <button class="icon-button" type="button" data-close aria-label="Cerrar detalle">×</button>
+      </header>
+      <div id="producto-detalle" class="product-detail"></div>
+    </section>
+  </div>
+
+  <div id="modal-checkout" class="overlay hidden" role="dialog" aria-modal="true" aria-labelledby="checkout-titulo">
+    <section class="modal-card checkout-modal">
+      <header class="modal-header">
+        <div><p class="eyebrow">Reserva de stock</p><h2 id="checkout-titulo">Datos del pedido</h2></div>
+        <button class="icon-button" type="button" data-close aria-label="Cerrar checkout">×</button>
+      </header>
+      <form id="form-checkout" novalidate>
+        <div class="checkout-layout">
+          <div class="form-grid">
+            <label>Nombre completo
+              <input id="checkout-nombre" class="field" maxlength="120" autocomplete="name" required>
+            </label>
+            <label>Teléfono
+              <input id="checkout-telefono" class="field" type="tel" maxlength="30" autocomplete="tel" required>
+            </label>
+            <label>Correo electrónico <span>(opcional)</span>
+              <input id="checkout-email" class="field" type="email" maxlength="160" autocomplete="email">
+            </label>
+            <label>Forma de entrega
+              <select id="checkout-entrega" class="field">
+                <option value="RECOLECCION">Recolección en tienda</option>
+                <option value="ENVIO">Envío</option>
+              </select>
+            </label>
+            <label id="grupo-checkout-direccion" class="full hidden">Dirección de entrega
+              <textarea id="checkout-direccion" class="field" maxlength="500" rows="3" autocomplete="street-address"></textarea>
+            </label>
+            <label class="full">Notas <span>(opcional)</span>
+              <textarea id="checkout-notas" class="field" maxlength="500" rows="3"></textarea>
+            </label>
+          </div>
+          <aside class="checkout-summary">
+            <h3>Resumen</h3>
+            <div id="checkout-items" class="checkout-items"></div>
+            <div class="summary-row"><span>Descuento</span><strong id="checkout-descuento">$0.00</strong></div>
+            <div class="summary-row total"><span>Total</span><strong id="checkout-total">$0.00</strong></div>
+            <p id="checkout-intento" class="notice hidden" role="status"></p>
+          </aside>
+        </div>
+        <p id="checkout-error" class="form-error" role="alert"></p>
+        <footer class="modal-footer">
+          <button class="button button-ghost" type="button" data-close>Volver</button>
+          <button id="btn-confirmar-pedido" class="button button-primary" type="submit">Crear pedido</button>
+        </footer>
+      </form>
+    </section>
+  </div>
+
+  <div id="modal-pedido" class="overlay hidden" role="dialog" aria-modal="true" aria-labelledby="pedido-modal-titulo">
+    <section class="modal-card order-modal">
+      <header class="modal-header">
+        <div><p class="eyebrow">Seguimiento</p><h2 id="pedido-modal-titulo">Consulta tu pedido</h2></div>
+        <button class="icon-button" type="button" data-close aria-label="Cerrar consulta">×</button>
+      </header>
+      <form id="form-consulta-pedido" class="order-search">
+        <label for="consulta-folio">Folio del pedido</label>
+        <div>
+          <input id="consulta-folio" class="field" maxlength="40" autocomplete="off" placeholder="P-0000000000">
+          <button id="btn-consultar-folio" class="button button-primary" type="submit">Consultar</button>
+        </div>
+      </form>
+      <p id="pedido-error" class="form-error" role="alert"></p>
+      <div id="pedido-resultado" class="order-result">
+        <p class="empty-state">Captura el folio para consultar un pedido creado en este navegador.</p>
+      </div>
+      <section id="pedido-cancelacion" class="cancel-box hidden">
+        <h3>Cancelar pedido</h3>
+        <p>La cancelación libera las unidades reservadas.</p>
+        <form id="form-cancelar-pedido">
+          <label for="cancelacion-motivo">Motivo</label>
+          <div>
+            <input id="cancelacion-motivo" class="field" maxlength="240" placeholder="Motivo de la cancelación">
+            <button id="btn-cancelar-pedido" class="button button-danger" type="submit">Cancelar pedido</button>
+          </div>
+        </form>
+      </section>
+      <footer class="modal-footer">
+        <a id="pedido-whatsapp" class="button button-whatsapp hidden" href="#" target="_blank" rel="noopener noreferrer">Contactar a la librería por WhatsApp</a>
+        <button class="button button-ghost" type="button" data-close>Cerrar</button>
+      </footer>
+    </section>
+  </div>
+
+  <div id="toasts" class="toasts" aria-live="polite"></div>
+  <script src="tienda.js"></script>
+</body>
+</html>

@@ -1,0 +1,521 @@
+                /* frontend/styles.css — diseño propio de Librería REM (sin copiar interfaces de terceros) */
+:root{
+  --tinta:#1d2733; --tinta-suave:#5b6675; --papel:#f7f5f0; --panel:#ffffff;
+  --acento:#0f766e; --acento-osc:#0c5d57; --ambar:#b45309; --rojo:#b91c1c;
+  --borde:#e4e0d6; --ok:#15803d; --sombra:0 10px 30px rgba(29,39,51,.12);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"Segoe UI",system-ui,sans-serif;background:var(--papel);color:var(--tinta);min-height:100vh}
+button{font-family:inherit;cursor:pointer}
+button:disabled,input:disabled,select:disabled{cursor:not-allowed;opacity:.55}
+.hidden{display:none !important}
+:focus-visible{outline:3px solid rgba(15,118,110,.45);outline-offset:2px;border-radius:6px}
+
+/* ---------- Login ---------- */
+.screen{min-height:100vh}
+.login-screen{display:flex;align-items:center;justify-content:center;background:radial-gradient(1200px 600px at 20% -10%,#123f3b,#0d1b26 60%)}
+.login-card{background:var(--panel);padding:38px;border-radius:16px;box-shadow:var(--sombra);width:380px;max-width:92vw}
+.brand h1{font-size:30px;letter-spacing:2px}
+.brand h1 span{color:var(--acento)}
+.brand p{color:var(--tinta-suave);font-size:13px;margin:4px 0 22px}
+.brand-mark{font-size:34px}
+.login-card label{display:block;font-size:12px;font-weight:600;color:var(--tinta-suave);margin:12px 0}
+.hint{margin-top:18px;font-size:11px;color:var(--tinta-suave);text-align:center}
+
+/* ---------- Controles ---------- */
+.inp{width:100%;padding:10px 12px;border:1px solid var(--borde);border-radius:8px;font-size:14px;background:#fff;color:var(--tinta)}
+.inp-lg{font-size:16px;padding:12px 14px}
+.btn{border:none;border-radius:8px;padding:9px 16px;font-size:13px;font-weight:600}
+.btn-primary{background:var(--acento);color:#fff}
+.btn-primary:hover{background:var(--acento-osc)}
+.btn-outline{background:#fff;border:1px solid var(--acento);color:var(--acento)}
+.btn-ghost{background:transparent;color:var(--tinta-suave)}
+.btn-ghost:hover{color:var(--rojo)}
+.btn-danger{background:var(--rojo);color:#fff}
+.btn-whatsapp{display:inline-flex;background:#168f55;color:#fff;border-color:#168f55;margin:8px 0}
+.btn-lg{font-size:15px;padding:12px 22px}
+.btn-block{width:100%;margin-top:8px}
+.form-error{color:var(--rojo);font-size:12px;min-height:16px;margin-top:6px}
+.form-inline{display:flex;gap:8px;align-items:end;flex-wrap:wrap;margin-top:10px}
+.form-inline label{font-size:12px;font-weight:600;color:var(--tinta-suave)}
+
+/* ---------- App ---------- */
+.topbar{display:flex;align-items:center;gap:14px;padding:10px 18px;background:var(--panel);border-bottom:1px solid var(--borde);position:sticky;top:0;z-index:20;flex-wrap:wrap}
+.brand-mini{font-weight:800;letter-spacing:1px}
+.brand-mini span{color:var(--acento)}
+.caja-selector{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:700;color:var(--tinta-suave)}
+.caja-selector .inp{min-width:132px;padding:6px 28px 6px 9px;font-size:12px}
+.chip{font-size:11px;font-weight:700;border-radius:999px;padding:4px 10px;background:#eef2f1;color:var(--tinta-suave)}
+.chip-warn{background:#fef3c7;color:var(--ambar)}
+.chip-ok{background:#dcfce7;color:var(--ok)}
+.tabs{display:flex;gap:4px;margin:0 auto}
+.tab{border:none;background:transparent;padding:8px 16px;border-radius:8px;font-weight:600;color:var(--tinta-suave)}
+.tab.active{background:var(--acento);color:#fff}
+.user-box{display:flex;align-items:center;gap:8px;font-size:13px}
+
+main{padding:16px;max-width:1240px;margin:0 auto}
+.tabpane{display:none}
+.tabpane.active{display:block}
+.panel{background:var(--panel);border:1px solid var(--borde);border-radius:12px;padding:16px;box-shadow:0 2px 8px rgba(29,39,51,.05)}
+.panel h2{font-size:15px;margin-bottom:12px}
+.panel h2 small{font-weight:400;color:var(--tinta-suave)}
+.panel-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}
+.panel-head h2{margin-bottom:0}
+.notice{font-size:12px;color:var(--tinta-suave);background:#f3f6f5;border-radius:8px;padding:8px 10px;margin:8px 0}
+
+/* Venta */
+.venta-grid{display:grid;grid-template-columns:1.1fr .9fr;gap:16px}
+@media (max-width:900px){.venta-grid,.caja-grid{grid-template-columns:1fr}}
+.resultados{margin-top:10px;display:flex;flex-direction:column;gap:8px;max-height:420px;overflow:auto}
+.result-card{display:flex;justify-content:space-between;gap:10px;border:1px solid var(--borde);border-radius:10px;padding:10px 12px;align-items:center}
+.result-card .t{font-size:13px;font-weight:600}
+.result-card .m{font-size:11px;color:var(--tinta-suave)}
+.stock-bajo{color:var(--ambar);font-weight:700}
+.stock-cero{color:var(--rojo);font-weight:700}
+.stock-reservado{color:var(--ambar);font-weight:700}
+.stock-disponible{color:var(--ok);font-weight:700}
+.result-actions,.inv-actions{display:flex;align-items:center;gap:8px}
+
+.tabla-scroll{overflow:auto;border:1px solid var(--borde);border-radius:10px}
+.tabla-alta{max-height:380px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{background:#f3f1ea;text-align:left;padding:9px 10px;font-size:11px;text-transform:uppercase;letter-spacing:.4px;color:var(--tinta-suave);position:sticky;top:0}
+td{padding:9px 10px;border-top:1px solid var(--borde)}
+.tabla-vacia{text-align:center;color:var(--tinta-suave);padding:24px}
+.carrito-pie{margin-top:12px}
+.total-linea{display:flex;justify-content:space-between;align-items:center;font-size:15px;margin-bottom:10px}
+.total-linea strong{font-size:28px;color:var(--ambar)}
+.acciones{display:flex;justify-content:flex-end;gap:8px}
+.qty-btn{border:1px solid var(--borde);background:#fff;border-radius:6px;width:24px;height:24px;line-height:1}
+
+/* Caja */
+.caja-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.resumen{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin:10px 0}
+.resumen .r{background:#f6f9f8;border-radius:10px;padding:10px}
+.resumen .r b{display:block;font-size:17px;color:var(--acento)}
+.resumen .r span{font-size:11px;color:var(--tinta-suave)}
+.corte-msg{margin-top:8px;font-size:13px;font-weight:600}
+hr{border:none;border-top:1px dashed var(--borde);margin:14px 0}
+
+/* Modales */
+.modal{position:fixed;inset:0;background:rgba(13,27,38,.55);display:none;align-items:center;justify-content:center;z-index:50;padding:16px}
+.modal.open{display:flex}
+.modal-card{background:#fff;border-radius:14px;width:460px;max-width:94vw;max-height:92vh;display:flex;flex-direction:column;box-shadow:var(--sombra);animation:pop .18s ease}
+.modal-tik{width:360px}
+.modal-wide{width:760px}
+.modal-kardex{width:min(1000px,96vw)}
+@keyframes pop{from{transform:scale(.95);opacity:.4}}
+.modal-head{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid var(--borde)}
+.modal-head h3{font-size:15px}
+.modal-x{border:none;background:none;font-size:20px;color:var(--tinta-suave)}
+.modal-body{padding:16px;overflow:auto}
+.modal-foot{padding:12px 16px;border-top:1px solid var(--borde);display:flex;justify-content:flex-end;gap:8px}
+.cobro-total{font-size:34px;font-weight:800;text-align:center;color:var(--ambar);margin-bottom:12px}
+.seg{display:flex;gap:6px;margin-bottom:12px}
+.seg-btn{flex:1;border:1px solid var(--borde);background:#fff;border-radius:8px;padding:8px;font-size:12px;font-weight:600;color:var(--tinta-suave)}
+.seg-btn.active{background:var(--acento);border-color:var(--acento);color:#fff}
+.lbl{font-size:12px;font-weight:600;color:var(--tinta-suave)}
+.quick{display:flex;gap:6px;margin:8px 0}
+.quick button{border:1px solid var(--acento);background:#f0faf9;color:var(--acento);border-radius:8px;padding:6px 10px;font-weight:700;font-size:12px}
+.cambio-linea{display:flex;justify-content:space-between;font-size:16px;margin-top:8px}
+.cambio-linea strong{color:var(--ok)}
+.nota-terminal{font-size:13px;color:var(--tinta-suave);text-align:center;padding:14px 0}
+.venta-resumen{display:flex;gap:8px 18px;flex-wrap:wrap;margin-bottom:12px;font-size:13px}
+.venta-resumen strong{color:var(--acento)}
+.postventa-controles{margin-top:14px}
+.dev-cantidad{width:82px;min-width:72px}
+.estado{display:inline-block;border-radius:999px;padding:3px 8px;font-size:10px;font-weight:800;background:#eef2f1;color:var(--tinta-suave)}
+.estado-completada{background:#dcfce7;color:var(--ok)}
+.estado-cancelada{background:#fee2e2;color:var(--rojo)}
+.estado-devuelta,.estado-parcialmente-devuelta{background:#fef3c7;color:var(--ambar)}
+.estado-reservado{background:#e0f2fe;color:#075985}
+.estado-listo{background:#dcfce7;color:var(--ok)}
+.estado-completado{background:#dcfce7;color:var(--ok)}
+.estado-cancelado,.estado-expirado{background:#fee2e2;color:var(--rojo)}
+.inventario-saldos{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin-bottom:14px}
+.inventario-saldo{background:#f6f9f8;border-radius:10px;padding:10px}
+.inventario-saldo span{display:block;font-size:11px;color:var(--tinta-suave)}
+.inventario-saldo b{font-size:20px;color:var(--acento)}
+.ajuste-grid{display:grid;grid-template-columns:1fr 2fr;gap:10px}
+.ajuste-grid label{display:flex;flex-direction:column;gap:6px}
+.resultado-ajuste{font-size:13px;font-weight:700;margin-top:8px}
+.resultado-valido{color:var(--ok)}
+.resultado-invalido{color:var(--rojo)}
+.kardex-delta-pos{color:var(--ok);font-weight:800}
+.kardex-delta-neg{color:var(--rojo);font-weight:800}
+@media (max-width:640px){.inventario-saldos,.ajuste-grid{grid-template-columns:1fr}}
+
+/* Pedidos omnicanal */
+.pedidos-panel{min-height:520px}
+.pedido-filtros .inp{max-width:340px}
+.pedido-filtros select.inp{max-width:210px}
+.tabla-pedidos{max-height:500px}
+.paginacion-pedidos{display:flex;justify-content:center;align-items:center;gap:12px;margin-top:12px}
+.modal-pedido{width:min(980px,96vw)}
+.pedido-resumen{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-bottom:10px}
+.pedido-resumen div{background:#f6f9f8;border-radius:9px;padding:9px}
+.pedido-resumen span{display:block;font-size:10px;text-transform:uppercase;letter-spacing:.3px;color:var(--tinta-suave)}
+.pedido-resumen strong{display:block;margin-top:3px;font-size:13px;overflow-wrap:anywhere}
+.pedido-contacto{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:12px;color:var(--tinta-suave);margin-bottom:10px}
+.pedido-contacto strong{color:var(--tinta)}
+.pedido-subtitulo{font-size:13px;margin:14px 0 8px}
+.pedido-secciones{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}
+.pedido-seccion{border:1px solid var(--borde);border-radius:10px;padding:12px;background:#fff}
+.pedido-seccion h4{font-size:13px;margin-bottom:9px}
+.pedido-seccion .lbl{display:flex;flex-direction:column;gap:5px}
+.pedido-acciones{display:flex;gap:8px;justify-content:flex-end;margin-top:10px;flex-wrap:wrap}
+.pedido-pago-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.pedido-historial{margin-top:14px}
+.pedido-historial summary{cursor:pointer;font-size:12px;font-weight:700;color:var(--acento);margin-bottom:8px}
+@media (max-width:760px){
+  .pedido-resumen{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .pedido-secciones{grid-template-columns:1fr}
+}
+@media (max-width:520px){
+  .pedido-resumen,.pedido-pago-grid{grid-template-columns:1fr}
+  .pedido-filtros .inp,.pedido-filtros select.inp{max-width:none}
+}
+
+/* Ticket */
+.ticket{font-family:"Courier New",monospace;font-size:12px;background:#fff;border:1px dashed var(--borde);padding:14px;border-radius:8px}
+.ticket .c{text-align:center}
+.ticket hr{margin:6px 0}
+.ticket .lin{display:flex;justify-content:space-between;gap:8px}
+#print-area{position:absolute;left:-10000px;top:0;width:80mm;box-sizing:border-box}
+@media print{
+  @page{margin:0}
+  body{margin:0;background:#fff}
+  body > :not(#print-area){display:none!important}
+  #print-area{position:static;left:auto;top:auto;width:80mm;border:0;border-radius:0;padding:2mm;overflow-wrap:anywhere}
+}
+
+/* Toasts */
+#toasts{position:fixed;right:16px;bottom:16px;display:flex;flex-direction:column;gap:8px;z-index:100}
+.toast{background:var(--tinta);color:#fff;padding:10px 16px;border-radius:10px;font-size:13px;border-left:4px solid var(--acento);box-shadow:var(--sombra);animation:pop .2s ease;max-width:320px}
+.toast.ok{border-left-color:var(--ok)}
+.toast.err{border-left-color:var(--rojo)}
+/* Catálogo y cotización común */
+.subtle{font-size:12px;color:var(--tinta-suave);line-height:1.4}
+.cotizacion-estado{font-size:12px;color:var(--tinta-suave);margin-bottom:8px;min-height:17px}
+.cotizacion-fila{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:5px}
+.cotizacion-fila .cotizacion-estado{margin-bottom:0}
+.cotizacion-fila .btn{padding:4px 8px;font-size:11px;white-space:nowrap}
+.cotizacion-cargando{color:var(--ambar)}
+.cotizacion-error{color:var(--rojo);font-weight:600}
+.cotizacion-ok{color:var(--ok);font-weight:600}
+.total-secundario{font-size:12px;margin-bottom:3px;color:var(--tinta-suave)}
+.total-secundario strong{font-size:15px;color:var(--ok)}
+.precio-descuento{color:var(--ok);font-weight:700}
+.precio-final{font-weight:800;color:var(--acento)}
+.venta-cliente{display:flex;align-items:flex-end;gap:8px;margin:0 0 3px;padding:10px;background:#f6f9f8;border:1px solid var(--borde);border-radius:10px}
+.venta-cliente label{display:grid;gap:4px;min-width:0;flex:1;color:var(--tinta-suave);font-size:11px;font-weight:700}
+.venta-cliente .btn{white-space:nowrap}
+.cliente-precio-aviso{min-height:17px;margin:0 2px 9px}
+.catalogo-panel{min-height:520px}
+.catalogo-head{align-items:flex-start;flex-wrap:wrap}
+.subtabs{display:flex;gap:5px;padding:4px;background:#f3f1ea;border-radius:10px}
+.subtab{border:0;background:transparent;color:var(--tinta-suave);border-radius:7px;padding:7px 13px;font-size:12px;font-weight:700}
+.subtab.active{background:#fff;color:var(--acento);box-shadow:0 1px 4px rgba(29,39,51,.12)}
+.catalogo-seccion{display:none;margin-top:14px}
+.catalogo-seccion.active{display:block}
+.toolbar{display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap}
+.toolbar .inp{max-width:330px}
+.toolbar select.inp{max-width:240px}
+.toolbar-end{justify-content:flex-end}
+.tabla-catalogo{max-height:480px}
+.tabla-detalle{display:block;color:var(--tinta-suave);font-size:11px;margin-top:2px}
+.form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px}
+.form-grid>label{display:flex;flex-direction:column;gap:5px;color:var(--tinta-suave);font-size:12px;font-weight:600}
+.form-grid .span-2,.span-2{grid-column:1/-1}
+.textarea{resize:vertical;min-height:82px;font-family:inherit;line-height:1.4}
+.check{display:flex!important;flex-direction:row!important;align-items:center;gap:7px!important;color:var(--tinta)!important}
+.check input{width:auto}
+.modal-catalogo{width:min(820px,96vw)}
+.imagenes-seccion{border-top:1px solid var(--borde);margin-top:16px;padding-top:14px}
+.section-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:10px}
+.section-head h4{font-size:14px;margin-bottom:2px}
+.imagenes-lista{display:grid;gap:8px;margin-bottom:10px}
+.imagen-card{display:grid;grid-template-columns:64px minmax(0,1fr) auto;gap:10px;align-items:center;border:1px solid var(--borde);border-radius:10px;padding:8px}
+.imagen-card img{width:64px;height:72px;object-fit:cover;border-radius:6px;background:#f3f1ea}
+.imagen-info{min-width:0;display:flex;flex-direction:column;align-items:flex-start;gap:4px}
+.imagen-info strong,.imagen-info small{max-width:100%;overflow-wrap:anywhere}
+.imagen-info small{color:var(--tinta-suave)}
+.imagen-form{display:grid;grid-template-columns:2fr 1fr auto auto;gap:8px;align-items:center;background:#f6f9f8;border-radius:10px;padding:10px}
+.publicacion-box{display:flex;align-items:center;justify-content:space-between;gap:12px;border:1px solid var(--borde);border-radius:10px;padding:11px;margin-top:14px}
+.publicacion-box strong{color:var(--acento)}
+@media (max-width:700px){
+  .form-grid{grid-template-columns:1fr}
+  .form-grid .span-2,.span-2{grid-column:auto}
+  .imagen-form{grid-template-columns:1fr}
+  .imagen-card{grid-template-columns:54px minmax(0,1fr)}
+  .imagen-card img{width:54px;height:64px}
+  .imagen-card .btn{grid-column:1/-1}
+  .catalogo-head{display:block}
+  .subtabs{margin-top:10px;overflow:auto}
+  .toolbar .inp,.toolbar select.inp{max-width:none}
+}
+
+/* Ficha bibliográfica e importación de catálogo */
+.form-seccion{min-width:0;border:1px solid var(--borde);border-radius:11px;padding:12px;background:#fafbf9}
+.form-seccion legend{padding:0 7px;color:var(--acento);font-size:12px;font-weight:800}
+.form-seccion .form-grid{gap:10px}
+.campo-ayuda{display:block;color:var(--tinta-suave);font-size:10px;font-weight:400;line-height:1.35;margin-top:1px}
+.lista-ayuda{margin:-2px 0 10px;font-size:11px}
+#producto-isbn-normalizado,#producto-autor{background:#f3f6f5;color:var(--tinta-suave)}
+
+.modal-importacion-productos{width:min(1120px,98vw)}
+.archivo-csv-label{display:block;color:var(--tinta-suave);font-size:12px;font-weight:700;margin-bottom:6px}
+#importacion-productos-archivo{padding:8px;background:#fafbf9}
+#importacion-productos-archivo::file-selector-button{border:1px solid var(--acento);border-radius:7px;background:#fff;color:var(--acento);font:inherit;font-weight:700;padding:7px 11px;margin-right:10px;cursor:pointer}
+#importacion-productos-archivo:disabled::file-selector-button{cursor:not-allowed}
+.importacion-preview{border-top:1px solid var(--borde);margin-top:16px;padding-top:14px}
+.importacion-resumen{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin:10px 0 14px}
+.importacion-resumen-item{min-width:0;border:1px solid var(--borde);border-top:3px solid var(--tinta-suave);border-radius:10px;background:#fff;padding:9px 10px}
+.importacion-resumen-item span{display:block;color:var(--tinta-suave);font-size:10px;text-transform:uppercase;letter-spacing:.35px}
+.importacion-resumen-item strong{display:block;font-size:21px;line-height:1.25;margin-top:2px;overflow-wrap:anywhere}
+.importacion-resumen-total{border-top-color:var(--tinta-suave)}
+.importacion-resumen-crear{border-top-color:var(--ok)}
+.importacion-resumen-actualizar{border-top-color:var(--acento)}
+.importacion-resumen-sin-cambios{border-top-color:#64748b}
+.importacion-resumen-rechazar{border-top-color:var(--rojo)}
+.importacion-filtros{justify-content:flex-end;margin-bottom:8px}
+.importacion-filtros label{color:var(--tinta-suave);font-size:11px;font-weight:700}
+.importacion-filtros select.inp{width:auto;min-width:190px;padding:7px 30px 7px 10px}
+.tabla-importacion-productos{max-height:430px}
+.tabla-importacion-productos table{min-width:900px;table-layout:fixed}
+.tabla-importacion-productos th:nth-child(1){width:64px}
+.tabla-importacion-productos th:nth-child(2){width:120px}
+.tabla-importacion-productos th:nth-child(3){width:175px}
+.tabla-importacion-productos th:nth-child(4){width:210px}
+.tabla-importacion-productos td{vertical-align:top;overflow-wrap:anywhere}
+.importacion-fila-detalle{min-width:0;font-size:11px;line-height:1.4}
+.importacion-incidencias{padding-left:17px;margin:0 0 5px}
+.importacion-incidencias:last-child{margin-bottom:0}
+.importacion-errores{color:var(--rojo)}
+.importacion-advertencias{color:var(--ambar)}
+.importacion-cambios summary{color:var(--acento);cursor:pointer;font-weight:700;list-style-position:inside}
+.importacion-cambios ul{color:var(--tinta-suave);padding-left:17px;margin-top:4px}
+.importacion-accion-crear{background:#dcfce7;color:var(--ok)}
+.importacion-accion-actualizar{background:#ccfbf1;color:var(--acento-osc)}
+.importacion-accion-sin-cambios{background:#e2e8f0;color:#475569}
+.importacion-accion-rechazar{background:#fee2e2;color:var(--rojo)}
+.importacion-omisiones{border:1px solid #fecaca;border-radius:9px;background:#fff7f7;color:var(--rojo)!important;font-size:12px;font-weight:600;margin-top:12px;padding:9px 10px}
+.importacion-productos-acciones{flex-wrap:wrap}
+.importacion-productos-acciones .btn-ghost{margin-right:auto}
+
+@media (max-width:820px){
+  .importacion-resumen{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .tabla-importacion-productos{max-height:50vh}
+}
+@media (max-width:560px){
+  .form-seccion{padding:10px}
+  .importacion-resumen{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .importacion-resumen-total{grid-column:1/-1}
+  .importacion-filtros{align-items:stretch}
+  .importacion-filtros label{width:100%}
+  .importacion-filtros select.inp{width:100%;max-width:none}
+  .tabla-importacion-productos table{min-width:760px}
+  .importacion-productos-acciones .btn{flex:1 1 calc(50% - 4px)}
+  .importacion-productos-acciones .btn-ghost{margin-right:0}
+}
+
+/* Compras y proveedores */
+.compras-panel{min-height:560px}
+.compras-head{align-items:flex-start;flex-wrap:wrap}
+.compras-seccion{display:none;margin-top:14px}
+.compras-seccion.active{display:block}
+.toolbar-compras{justify-content:space-between;align-items:flex-start}
+.toolbar-sin-margen{margin:0;flex:1}
+.toolbar-acciones{display:flex;gap:8px;margin-left:auto}
+.check-filtro{font-size:12px;white-space:nowrap;padding:8px 3px}
+.tabla-compras{max-height:500px}
+.modal-compra{width:min(1120px,98vw)}
+.modal-compra-operacion{width:min(960px,98vw)}
+.compra-agregar-producto{margin:16px 0 12px;padding:12px;background:#f6f9f8;border-radius:10px}
+.compra-agregar-producto>.lbl{display:block;margin-bottom:6px}
+.compra-resultados{max-height:230px}
+.compra-totales{display:flex;justify-content:flex-end;gap:18px;flex-wrap:wrap;margin-top:12px}
+.compra-totales span{font-size:12px;color:var(--tinta-suave)}
+.compra-totales strong{display:block;color:var(--acento);font-size:18px;text-align:right}
+.compra-resumen{grid-template-columns:repeat(3,minmax(0,1fr))}
+.compra-acciones{margin:14px 0}
+.compra-ayuda{margin-top:8px}
+.inp-tabla{width:112px;min-width:84px;padding:7px 8px}
+.estado-emitida{background:#e0f2fe;color:#075985}
+.estado-parcial{background:#fef3c7;color:var(--ambar)}
+.estado-recibida{background:#dcfce7;color:var(--ok)}
+.estado-cancelada{background:#fee2e2;color:var(--rojo)}
+
+@media (max-width:760px){
+  .tabs{width:100%;order:3;overflow-x:auto;flex-wrap:nowrap;justify-content:flex-start;padding-bottom:2px}
+  .tab{white-space:nowrap}
+  .toolbar-compras{display:block}
+  .toolbar-acciones{margin:10px 0 0;justify-content:flex-end}
+  .compra-resumen{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media (max-width:520px){
+  .compra-resumen{grid-template-columns:1fr}
+  .compra-totales{display:grid;grid-template-columns:1fr 1fr}
+  .compra-totales span:last-child{grid-column:1/-1}
+}
+
+/* Reposición y conteos */
+.sr-only{position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.inventario-panel{min-height:560px}
+.inventario-head{align-items:flex-start;flex-wrap:wrap}
+.inventario-seccion{display:none;margin-top:14px}
+.inventario-seccion.active{display:block}
+.toolbar-inventario{justify-content:space-between;align-items:flex-start}
+.tabla-reposicion,.tabla-conteos{max-height:520px}
+.reposicion-necesaria{background:#fffdf3}
+.reposicion-cantidad{font-weight:800;color:var(--acento)}
+.texto-alerta{color:var(--rojo);font-weight:700}
+.estado-borrador{background:#fef3c7;color:var(--ambar)}
+.estado-aplicado{background:#dcfce7;color:var(--ok)}
+.estado-cancelado{background:#fee2e2;color:var(--rojo)}
+.modal-conteo{width:min(1120px,98vw)}
+.conteo-busqueda-producto{margin:16px 0 12px;padding:12px;background:#f6f9f8;border-radius:10px}
+.conteo-resultados{max-height:220px}
+.tabla-conteo-seleccion{max-height:320px}
+.conteo-resumen{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-bottom:12px}
+.conteo-resumen .resumen-dato{min-width:0;background:#f6f9f8;border-radius:9px;padding:9px}
+.conteo-resumen .resumen-dato span{display:block;font-size:10px;text-transform:uppercase;letter-spacing:.3px;color:var(--tinta-suave)}
+.conteo-resumen .resumen-dato strong{display:block;margin-top:3px;font-size:13px;overflow-wrap:anywhere}
+.tabla-captura-conteo{max-height:480px}
+.conteo-cantidad{min-width:92px}
+.conteo-obsoleto{background:#fff1f2}
+.conteo-motivo{display:block;margin-top:14px}
+.conteo-modal-acciones{flex-wrap:wrap}
+.btn-mini{display:block;margin-top:4px;padding:3px 7px;font-size:10px}
+
+@media (max-width:900px){
+  .toolbar-inventario{display:block}
+  .toolbar-inventario>.toolbar-acciones{margin-top:10px}
+  .conteo-resumen{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media (max-width:640px){
+  .inventario-head .subtabs{width:100%}
+  .conteo-resumen{grid-template-columns:1fr}
+  .conteo-modal-acciones{justify-content:stretch}
+  .conteo-modal-acciones .btn{flex:1 1 45%}
+}
+
+/* Reportes operativos y gerenciales */
+.reportes-panel{min-height:620px}
+.reportes-head{align-items:flex-start;flex-wrap:wrap}
+.reportes-controles{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;padding:12px;background:#f6f9f8;border:1px solid var(--borde);border-radius:10px}
+.reportes-periodo label{display:grid;gap:4px;color:var(--tinta-suave);font-size:11px;font-weight:700}
+.reportes-periodo input.inp{min-width:150px}
+.reportes-seccion{display:none;margin-top:16px}
+.reportes-seccion.active{display:block}
+.reportes-seccion>h3,.reportes-doble h3{font-size:13px;margin:18px 0 8px;color:var(--tinta)}
+.reporte-filtros{padding-bottom:11px;border-bottom:1px solid var(--borde)}
+.reportes-metricas{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px;margin:13px 0 16px}
+.reporte-metrica{min-width:0;border:1px solid var(--borde);border-top:3px solid var(--acento);border-radius:10px;background:#fff;padding:10px 11px}
+.reporte-metrica strong{display:block;margin-top:3px;color:var(--tinta);font-size:20px;line-height:1.2;overflow-wrap:anywhere}
+.reporte-metrica span{display:block;color:var(--tinta-suave);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.35px}
+.reporte-metrica-alerta{border-top-color:var(--ambar)}
+.reporte-metrica-negativa{border-top-color:var(--rojo)}
+.reportes-doble{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-top:4px}
+.reportes-doble section{min-width:0}
+.reportes-doble .tabla-scroll{max-height:300px}
+.tabla-reportes{max-height:430px;margin-bottom:4px}
+.tabla-reportes table{min-width:860px}
+.reportes-seccion .estado{white-space:nowrap}
+.reporte-neto-negativo{color:var(--rojo);font-weight:800}
+.reporte-neto-positivo{color:var(--ok);font-weight:800}
+
+/* Clientes, mayoreo y cotizaciones persistentes */
+.clientes-panel{min-height:580px}
+.clientes-head{align-items:flex-start;flex-wrap:wrap}
+.clientes-seccion{display:none;margin-top:14px}
+.clientes-seccion.active{display:block}
+.toolbar-clientes{justify-content:space-between;align-items:flex-start}
+.tabla-clientes,.tabla-cotizaciones{max-height:500px}
+.tabla-clientes table{min-width:760px}
+.tabla-cotizaciones table{min-width:980px}
+.modal-cotizacion{width:min(1040px,98vw)}
+.tabla-cotizacion-detalle{max-height:380px}
+.tabla-cotizacion-detalle table{min-width:720px}
+.cotizacion-alta-resumen{border:1px solid var(--borde);border-left:4px solid var(--acento);border-radius:9px;background:#f6f9f8;padding:10px 12px;margin-bottom:12px;font-size:13px;line-height:1.45}
+.cotizacion-gestion{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:14px}
+.cotizacion-operacion{min-width:0;border:1px solid var(--borde);border-radius:10px;background:#fff;padding:12px}
+.cotizacion-operacion h4{font-size:13px;margin-bottom:6px}
+.cotizacion-operacion .subtle{margin-bottom:10px}
+.cotizacion-operacion .lbl{display:block;margin:8px 0 5px}
+.estado-vigente{background:#e0f2fe;color:#075985}
+.estado-convertida{background:#dcfce7;color:var(--ok)}
+.estado-vencida{background:#fee2e2;color:var(--rojo)}
+.segmento-publico{background:#e0f2fe;color:#075985}
+.segmento-mayoreo{background:#ede9fe;color:#5b21b6}
+.cotizacion-vencida-aviso{color:var(--rojo);font-weight:600}
+
+@media (max-width:980px){
+  .reportes-metricas{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .reportes-controles{align-items:stretch;flex-direction:column}
+  .reportes-controles .toolbar-acciones{margin:0;justify-content:flex-end}
+}
+@media (max-width:760px){
+  .venta-cliente{align-items:stretch;flex-direction:column}
+  .venta-cliente .btn{width:100%}
+  .clientes-head .subtabs{width:100%;overflow-x:auto}
+  .toolbar-clientes{display:block}
+  .toolbar-clientes .toolbar-acciones{margin:10px 0 0;justify-content:flex-end}
+  .cotizacion-gestion{grid-template-columns:1fr}
+  .reportes-head .subtabs{width:100%;overflow-x:auto}
+  .reportes-doble{grid-template-columns:1fr}
+  .reportes-periodo{align-items:flex-end}
+}
+@media (max-width:560px){
+  .toolbar-clientes .toolbar-acciones{display:grid;grid-template-columns:1fr}
+  .toolbar-clientes .toolbar-acciones .btn{width:100%}
+  .cotizacion-gestion .btn{width:100%}
+  .reportes-metricas{grid-template-columns:1fr}
+  .reportes-periodo{display:grid;grid-template-columns:1fr 1fr;width:100%}
+  .reportes-periodo label,.reportes-periodo input.inp{width:100%;min-width:0}
+  .reportes-periodo .btn{grid-column:1/-1}
+  .reportes-controles .toolbar-acciones{display:grid;grid-template-columns:1fr 1fr}
+  .reporte-filtros .inp,.reporte-filtros select.inp{width:100%;max-width:none}
+  .reporte-filtros .btn{width:100%}
+}
+
+/* Gestión editorial */
+.editorial-seccion{display:none}
+.editorial-seccion.active{display:block}
+.toolbar-editorial{justify-content:space-between;align-items:flex-start}
+.tabla-editorial{max-height:520px}
+.tabla-editorial table{min-width:940px}
+.tabla-editorial-resumen{max-height:300px;margin-bottom:16px}
+.tabla-editorial-resumen table{min-width:900px}
+.tabla-regalias-detalle{max-height:420px}
+.tabla-regalias-detalle table{min-width:980px}
+.tabla-consignacion-lineas{max-height:300px;margin-top:10px}
+.tabla-consignacion-detalle{max-height:420px}
+.tabla-consignacion-detalle table{min-width:1180px}
+.tabla-consignacion-operacion{max-height:420px}
+.modal-editorial-detalle{width:min(1120px,98vw)}
+.editorial-bloque{margin-top:18px;padding-top:14px;border-top:1px solid var(--borde)}
+.editorial-bloque h4{margin-bottom:10px}
+.editorial-form-inline{padding:12px;margin-bottom:10px;background:#f8faf9;border:1px solid var(--borde);border-radius:10px}
+.editorial-form-inline .toolbar{margin-bottom:0}
+#contrato-editorial-derechos,#obra-editorial-sinopsis{white-space:pre-wrap;overflow-wrap:anywhere}
+.estado-propuesta,.estado-borrador{background:#fef3c7;color:var(--ambar)}
+.estado-evaluacion,.estado-edicion,.estado-diseno,.estado-impresion,.estado-suspendido{background:#e0f2fe;color:#075985}
+.estado-contratada,.estado-publicada,.estado-vigente{background:#dcfce7;color:var(--ok)}
+.estado-confirmado,.estado-emitida,.estado-pagada{background:#dcfce7;color:var(--ok)}
+.estado-enviada{background:#e0f2fe;color:#075985}
+.estado-parcial{background:#fef3c7;color:var(--ambar)}
+.estado-liquidada,.estado-cerrada{background:#dcfce7;color:var(--ok)}
+.estado-archivada,.estado-terminado{background:#eef2f1;color:var(--tinta-suave)}
+
+@media (max-width:900px){
+  .editorial-head{align-items:flex-start;flex-direction:column}
+  .editorial-head .subtabs{width:100%;overflow-x:auto}
+  .toolbar-editorial{display:block}
+  .toolbar-editorial>.toolbar-acciones{margin:10px 0 0;justify-content:flex-end}
+}
+
+@media (max-width:560px){
+  .toolbar-editorial>.toolbar-acciones{display:grid;grid-template-columns:1fr}
+  .toolbar-editorial>.toolbar-acciones .btn{width:100%}
+}

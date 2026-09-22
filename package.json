@@ -1,0 +1,24 @@
+{
+  "name": "libra-pos",
+  "version": "1.0.0",
+  "private": true,
+  "packageManager": "npm@11.17.0",
+  "description": "Librería REM: punto de venta con frontend estático y API Node/Express/PostgreSQL.",
+  "workspaces": [
+    "frontend",
+    "backend"
+  ],
+  "scripts": {
+    "start": "npm run start --workspace backend",
+    "dev": "npm run dev --workspace backend",
+    "test": "npm run test --workspace backend",
+    "db:init": "npm run db:init --workspace backend",
+    "db:migrate": "npm run db:migrate --workspace backend",
+    "db:seed": "npm run db:seed --workspace backend",
+    "db:setup": "npm run db:setup --workspace backend",
+    "ops:backup-restore": "npm run ops:backup-restore --workspace backend"
+  },
+  "engines": {
+    "node": "24.x"
+  }
+}

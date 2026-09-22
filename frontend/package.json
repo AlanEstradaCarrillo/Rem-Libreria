@@ -1,0 +1,6 @@
+{
+  "name": "@libra-pos/frontend",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Frontend estático HTML, CSS y JavaScript de Librería REM."
+}
