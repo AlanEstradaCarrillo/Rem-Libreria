@@ -206,7 +206,7 @@ Mantener la regresión de las 11 puertas en cualquier cambio futuro. Si se modif
 
 **Estado:** 🟡 **PENDIENTE DE VERIFICACIÓN EXTERNA**.
 
-**Siguiente acción:** El titular debe decidir si habilita un plan de GitHub que admita protección de ramas privadas; no cambiar la visibilidad del repositorio por este motivo. Con un plan compatible, un administrador debe configurar la protección de `main` con el check `Integración con PostgreSQL` obligatorio y confirmar que un PR rojo no puede fusionarse. Después se repetirá la reconciliación de este bloque. Para trabajo futuro desde esta carpeta, autenticar Git local y vincularlo a la historia remota sin sobrescribirla.
+**Siguiente acción:** Seguir `docs/operacion/bloque-10-proteccion-main.md`. El titular debe decidir si habilita un plan de GitHub que admita protección de ramas privadas; no cambiar la visibilidad del repositorio por este motivo. Con un plan compatible, un administrador debe configurar la protección de `main` con el check `Integración con PostgreSQL` obligatorio y confirmar que un PR rojo no puede fusionarse. Después se repetirá la reconciliación de este bloque. Para trabajo futuro desde esta carpeta, autenticar Git local y vincularlo a la historia remota sin sobrescribirla.
 
 **Fase 2 implementada:** 1/6 bloques.
 
