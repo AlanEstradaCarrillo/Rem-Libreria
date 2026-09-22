@@ -10,9 +10,11 @@ La cuenta o la organización debe disponer de un plan de GitHub que permita prot
 
 En GitHub, abre el repositorio y entra en **Settings → Branches** o **Settings → Rules → Rulesets**, según la interfaz disponible. Crea una regla activa que apunte exactamente a la rama `main` y configura como mínimo:
 
+El check ya tiene ejecuciones correctas recientes en el repositorio, por lo que debe aparecer en el selector. `Pruebas POS` es el nombre del workflow; el control que se debe seleccionar es el nombre exacto del job: **`Integración con PostgreSQL`**.
+
 1. exigir que los cambios lleguen mediante pull request;
 2. exigir comprobaciones de estado antes de fusionar;
-3. seleccionar el check exacto **`Integración con PostgreSQL`**;
+3. seleccionar el check exacto **`Integración con PostgreSQL`** y, si GitHub permite fijar su origen, seleccionar GitHub Actions;
 4. exigir que la rama del pull request esté actualizada antes de fusionar;
 5. impedir eliminaciones y `force push` sobre `main`;
 6. impedir el bypass de estas reglas, incluido para administradores, si el plan y la interfaz lo permiten.

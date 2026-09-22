@@ -11,7 +11,7 @@ Este bloque no despliega nada. Define la comprobación que debe ejecutarse en un
 - Logs y backups de staging con destino separado.
 - Dominio o URL de staging no pública para clientes mientras se prueba.
 
-La aplicación actual puede servirse con `npm.cmd start`; el frontend estático se sirve desde la misma API y no requiere un build separado. El repositorio no contiene Docker y todavía no tiene un remoto Git, por lo que el despliegue reproducible de staging requiere una decisión de infraestructura externa.
+La aplicación actual puede servirse con `npm.cmd start`; el frontend estático se sirve desde la misma API y no requiere un build separado. El código ya está en el repositorio privado `AlanEstradaCarrillo/Rem-Libreria` y su CI ejecuta la suite con PostgreSQL. El proyecto no contiene Docker y todavía no existe un proveedor ni un entorno de staging, por lo que el despliegue reproducible requiere una decisión de infraestructura externa.
 
 ## Smoke test requerido
 
