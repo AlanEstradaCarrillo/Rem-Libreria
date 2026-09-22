@@ -196,23 +196,23 @@ Mantener la regresión de las 11 puertas en cualquier cambio futuro. Si se modif
 
 **Estado inicial:** El proyecto no tenía flujo de CI, repositorio Git, rama activa ni remoto configurado.
 
-**Evidencia automatizada:** La suite local vigente terminó con **160 pruebas aprobadas, 0 fallidas y 0 omitidas** en aproximadamente 118 segundos. Incluye la prueba nueva de observabilidad.
+**Evidencia automatizada:** En esta sesión, la suite local vigente terminó con **160 pruebas aprobadas, 0 fallidas y 0 omitidas** en aproximadamente 233 segundos. En GitHub Actions, la corrida de `push` sobre `main` [35734820573](https://github.com/AlanEstradaCarrillo/Rem-Libreria/actions/runs/35734820573) terminó con **160/160 aprobadas, 0 fallidas y 0 omitidas** (39,4 segundos de pruebas). La PR temporal [#1](https://github.com/AlanEstradaCarrillo/Rem-Libreria/pull/1) mostró un fallo deliberado en [35734894689](https://github.com/AlanEstradaCarrillo/Rem-Libreria/actions/runs/35734894689); tras retirar la prueba temporal, tanto `push` [35735142752](https://github.com/AlanEstradaCarrillo/Rem-Libreria/actions/runs/35735142752) como `pull_request` [35735154446](https://github.com/AlanEstradaCarrillo/Rem-Libreria/actions/runs/35735154446) volvieron a verde, esta última con **160/160 aprobadas, 0 fallidas y 0 omitidas** (47,5 segundos de pruebas). La PR se cerró sin fusionar y sin cambios netos respecto a `main`.
 
-**Evidencia técnica ejecutada:** Se añadió `.github/workflows/ci.yml` con eventos `push` y `pull_request`, permisos mínimos `contents: read`, PostgreSQL 18.6 aislado con health check, instalación limpia `npm ci`, Node 24 y `npm test`. El servicio de pruebas usa credenciales desechables declaradas en el workflow y no utiliza `backend/.env`. La sintaxis y estructura del archivo fueron revisadas localmente.
+**Evidencia técnica ejecutada:** Se añadió `.github/workflows/ci.yml` con eventos `push` y `pull_request`, permisos mínimos `contents: read`, PostgreSQL 18.6 aislado con health check, instalación limpia `npm ci`, Node 24 y `npm test`. El repositorio privado `AlanEstradaCarrillo/Rem-Libreria` recibió los **117 archivos** del proyecto; se compararon sus SHA de blob con los archivos locales y no hubo diferencias. `backend/.env`, dependencias instaladas y archivos de log no se publicaron. Las corridas reales confirmaron arranque del servicio PostgreSQL, instalación limpia y ejecución de la suite. La carpeta local aún no tiene `.git` ni remoto configurado porque Git local no tiene autenticación para este repositorio privado; la publicación se realizó mediante la conexión autorizada de GitHub.
 
-**Evidencia externa necesaria:** No existe un repositorio Git remoto en esta carpeta, por lo que no se pudo ejecutar un `push`, un `pull_request`, una corrida real de GitHub Actions, una falla deliberada rojo→verde ni la protección de rama. Estas comprobaciones requieren vincular el proyecto a un repositorio y permisos de administración.
+**Evidencia externa necesaria:** Falta configurar y comprobar una regla de protección de `main` que exija el check `Integración con PostgreSQL`. La conexión de GitHub disponible devuelve **403, Resource not accessible by integration** al consultar la protección de rama y no ofrece una operación administrativa para configurarla. Se requiere una persona con permisos de administración del repositorio. La autenticación de Git local también requiere intervención del titular si se desea usar `git push` desde esta carpeta.
 
-**Riesgos pendientes:** Hasta observar una corrida real no se puede asegurar que el runner, el servicio PostgreSQL y los permisos de creación de esquemas coincidan con el entorno local.
+**Riesgos pendientes:** CI funciona en `push` y `pull_request`, pero sin protección comprobada de `main` aún podría incorporarse un cambio que no pase la suite. La carpeta local no está vinculada con la historia Git remota para futuros envíos por CLI.
 
 **Estado:** 🟡 **PENDIENTE DE VERIFICACIÓN EXTERNA**.
 
-**Siguiente acción:** Vincular el proyecto a un repositorio Git remoto; ejecutar una corrida `push` y otra `pull_request`, provocar una falla controlada y revertirla, y configurar protección de rama con el check de integración requerido. Después repetir la reconciliación de este bloque.
+**Siguiente acción:** Un administrador debe configurar la protección de `main` con el check `Integración con PostgreSQL` obligatorio y confirmar que un PR rojo no puede fusionarse. Después se repetirá la reconciliación de este bloque. Para trabajo futuro desde esta carpeta, autenticar Git local y vincularlo a la historia remota sin sobrescribirla.
 
 **Fase 2 implementada:** 1/6 bloques.
 
 **Fase 2 verificada técnicamente:** 0/6 bloques.
 
-**Pendientes externos:** 1 — ejecución real de CI y protección de rama.
+**Pendientes externos:** 1 — protección de rama con permiso de administración.
 
 **Listo para staging:** No.
 
