@@ -258,7 +258,8 @@ Mantener la regresión de las 11 puertas en cualquier cambio futuro. Si se modif
 
 ### Verificación técnica ejecutada
 
-- `npm.cmd run ops:backup-restore` ejecutado contra PostgreSQL local 18.6 con una base temporal generada por el script: **aprobado**. Se conservaron el dato centinela, las **19 migraciones** y la ausencia de pendientes después de destruir y restaurar la base temporal.
+- `npm.cmd run ops:backup-restore` ejecutado contra PostgreSQL local 18.6 con una base temporal generada por el script: **aprobado**.
+- Re-ejecución del 23 de octubre de 2026 con `BACKUP_RESTORE_CONFIRM` definido: **aprobada**. Se conservaron las 19 migraciones y los datos, y no quedó ninguna base temporal (solo `libra_pos`). Se conservaron el dato centinela, las **19 migraciones** y la ausencia de pendientes después de destruir y restaurar la base temporal.
 - El ensayo usó únicamente una base con nombre `libra_pos_backup_test_*`; se eliminó al finalizar. No se destruyó ni modificó `libra_pos`.
 - Las migraciones existentes siguen aplicándose con bloqueo advisory, checksum SHA-256 y transacción por archivo; el procedimiento de fallo y recuperación quedó documentado.
 
