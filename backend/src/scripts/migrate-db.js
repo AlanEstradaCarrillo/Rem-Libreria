@@ -15,8 +15,27 @@ function migrationFiles() {
     .sort((a, b) => a.localeCompare(b));
 }
 
+function hash(texto) {
+  return crypto.createHash("sha256").update(texto, "utf8").digest("hex");
+}
+
+function aLF(sql) {
+  return sql.replace(/\r\n?/g, "\n");
+}
+
+/** Suma de referencia: el contenido con finales de línea LF, que es como se guarda en el repositorio. */
 function checksum(sql) {
-  return crypto.createHash("sha256").update(sql, "utf8").digest("hex");
+  return hash(aLF(sql));
+}
+
+/**
+ * Sumas aceptadas para un archivo. Las bases migradas antes de normalizar los
+ * finales de línea guardaron la suma del contenido crudo, con LF o con CRLF según
+ * el checkout de su máquina; por eso se aceptan las tres variantes.
+ */
+function checksumVariantes(sql) {
+  const lf = aLF(sql);
+  return new Set([hash(sql), hash(lf), hash(lf.replace(/\n/g, "\r\n"))]);
 }
 
 /**
@@ -53,11 +72,10 @@ async function runMigrations(db = pool, { logger = console } = {}) {
     for (const file of migrationFiles()) {
       const version = path.basename(file, ".sql");
       const sql = fs.readFileSync(path.join(MIGRATIONS_DIR, file), "utf8");
-      const digest = checksum(sql);
       const previousDigest = applied.get(version);
 
       if (previousDigest) {
-        if (previousDigest !== digest) {
+        if (!checksumVariantes(sql).has(previousDigest)) {
           throw new Error(
             `La migración ${version} cambió después de aplicarse; restaura su contenido original.`
           );
@@ -70,7 +88,7 @@ async function runMigrations(db = pool, { logger = console } = {}) {
         await client.query(sql);
         await client.query(
           "INSERT INTO schema_migrations (version, checksum) VALUES ($1, $2)",
-          [version, digest]
+          [version, checksum(sql)]
         );
         await client.query("COMMIT");
         executed.push(version);
@@ -105,4 +123,4 @@ if (require.main === module) {
     .finally(() => pool.end());
 }
 
-module.exports = { runMigrations };
+module.exports = { runMigrations, checksum, checksumVariantes };

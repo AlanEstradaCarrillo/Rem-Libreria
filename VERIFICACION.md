@@ -197,6 +197,14 @@ Estado: **VERIFICADO**. El núcleo definido en este protocolo cumple la condici�
 - **Corrección tras la revisión del PR #3:** el botón «Dividir pago» quedaba oculto en modo mixto y no permitía volver al pago con un solo medio; ahora sigue visible y alterna su texto. Además, la migración `021_garantia_medios_pago.sql` agrega dos disparadores diferidos: todo movimiento de venta, cancelación o devolución debe tener medios, y sus medios deben sumar exactamente su monto. Dos pruebas nuevas confirman que la base rechaza ambos casos.
 - **Suite tras la corrección:** **168/168 aprobadas, 0 fallidas, 0 omitidas**.
 
+## Corrección de sumas de migraciones (23 de octubre de 2026)
+
+- **Problema:** el runner calculaba la suma de cada migración sobre el texto crudo. Con `core.autocrlf` en Windows, el mismo archivo tenía otra suma que en Linux, así que una base migrada en un entorno rechazaba las migraciones del otro. La base local `libra_pos` tenía las migraciones 001 a 004 y 007 a 019 con sumas LF, y 005 y 006 con sumas CRLF.
+- **Corrección:** `migrate-db.js` acepta una suma si coincide con el contenido crudo, con LF o con CRLF. Las sumas nuevas se guardan en LF. `.gitattributes` fija LF en `backend/database/migrations/*.sql`, y las migraciones 005 y 006 se normalizaron a LF; ese cambio es solo de finales de línea.
+- **Evidencia automatizada:** la prueba nueva `migraciones-checksum.test.js` pasa. Suite completa: **169/169 aprobadas, 0 fallidas, 0 omitidas**.
+- **Evidencia técnica:** una copia temporal de `libra_pos` migró sin ajustes manuales hasta la 021. Las sumas de 020 y 021 quedaron en LF. La copia se eliminó; `libra_pos` no cambió y sigue en la 019.
+- **Limitación:** `libra_pos` todavía no tiene 020 y 021 aplicadas. Su migración se hará cuando se decida usarla.
+
 ## Limitación aceptada del Bloque 1
 
 El logout elimina la sesión guardada en el navegador, pero no mantiene una lista de revocación de JWT en el servidor. Un token que hubiese sido copiado fuera del navegador conserva su vigencia hasta `JWT_EXPIRES`. Desactivar al usuario invalida el acceso en la siguiente petición porque el backend consulta PostgreSQL cada vez.
