@@ -168,16 +168,34 @@ Estado: **VERIFICADO**. El núcleo definido en este protocolo cumple la condici�
 | Bloque 2 — Apertura y estado de caja | Verificado |
 | Bloque 3 — Productos e inventario | Verificado |
 | Bloque 4 — Carrito y preparación de venta | Verificado |
-| Bloque 5 — Cobro | Verificado |
-| Bloque 6 — Registro transaccional de la venta | Verificado |
-| Bloque 7 — Ticket | Verificado |
-| Bloque 8 — Movimientos de caja | Verificado |
-| Bloque 9 — Cierre y corte de caja | Verificado |
+| Bloque 5 — Cobro | Verificado (reverificado el 23 de octubre de 2026, pagos mixtos) |
+| Bloque 6 — Registro transaccional de la venta | Verificado (reverificado el 23 de octubre de 2026, pagos mixtos) |
+| Bloque 7 — Ticket | Verificado (reverificado el 23 de octubre de 2026, pagos mixtos) |
+| Bloque 8 — Movimientos de caja | Verificado (reverificado el 23 de octubre de 2026, pagos mixtos) |
+| Bloque 9 — Cierre y corte de caja | Verificado (reverificado el 23 de octubre de 2026, pagos mixtos) |
 | Prueba integral final | Verificada |
 
 - Avance implementado: **100%** (11 de 11 puertas del protocolo).
 - Avance verificado: **100%** (11 de 11 puertas del protocolo).
 - Beta funcional: **Sí**, dentro del alcance de este protocolo.
+
+## Reapertura — pagos mixtos (23 de octubre de 2026)
+
+- **Estado:** los bloques 5, 6, 7, 8 y 9 se reabrieron por este cambio y se reverificaron el 23 de octubre de 2026. Sus secciones inferiores describen la verificación anterior; la nueva evidencia se resume abajo.
+- **Autorización:** el titular autoriza implementar pagos mixtos como única excepción a la regla de funciones nuevas (decisión registrada en `docs/operacion/prompt-de-avance.md`).
+- **Alcance:** una venta directa de POS puede cobrarse con varios medios de pago. El cobro de pedidos sigue con un solo medio.
+- **Diseño:**
+  - Una fila por medio de pago en la nueva tabla `movimiento_pagos`, para cada movimiento de venta, cancelación o devolución. Los importes por medio salen de ahí.
+  - Se mantiene un solo movimiento de caja por evento comercial. Así las líneas comerciales no se duplican.
+  - Una venta con varios medios usa `MIXTO` como `metodo_pago` en la venta y en su movimiento.
+  - El cambio solo existe en el tramo de efectivo.
+  - La cancelación revierte el mismo reparto. La devolución parcial reparte proporcionalmente, y el último medio absorbe el redondeo.
+- **Limitación:** en los reportes por método de pago, una venta mixta aparece como `MIXTO` y no se reparte. Los importes de caja, corte y flujo de efectivo sí se reparten por medio.
+- **Evidencia automatizada:** suite completa **167/167 aprobadas, 0 fallidas, 0 omitidas** (160 previas más 7 nuevas en `backend/test/integration/pagos-mixtos.test.js`). Las nuevas cubren cobro con varios medios, validaciones que no crean venta, pago único con la forma nueva, cancelación que revierte cada medio, devoluciones parciales con redondeo que cuadra, cobro idempotente y corte por medio. Ninguna prueba existente se modificó.
+- **Evidencia técnica en navegador:** se usó una base temporal `libra_pos_verif_mixtos`, creada con `db:setup` y eliminada al terminar. Un cobro dividido de $174 con $74 en efectivo (recibido $100) y $100 con tarjeta mostró en el ticket: efectivo $74, recibido $100, tarjeta $100 y cambio $26. En la base: venta `MIXTO`, un movimiento `MIXTO` por $174 y dos filas en `movimiento_pagos` (efectivo $74 con recibido $100 y cambio $26; tarjeta $100). El efectivo esperado de la API fue $174. Un cobro de pago único en efectivo ($58, recibido $60) mostró el mismo ticket de antes: efectivo $60 y cambio $2.
+- **Limitaciones de la verificación en navegador:** no se probaron en navegador la cancelación ni la devolución de una venta mixta, ni el pago dividido con transferencia; esas rutas quedan cubiertas por las pruebas de API. El campo de efectivo recibido del pago único se rellenó con un evento de entrada, no escribiendo en el campo. La vista de movimientos muestra `MIXTO` en la columna de método, sin revisión visual en navegador.
+- **Corrección tras la revisión del PR #3:** el botón «Dividir pago» quedaba oculto en modo mixto y no permitía volver al pago con un solo medio; ahora sigue visible y alterna su texto. Además, la migración `021_garantia_medios_pago.sql` agrega dos disparadores diferidos: todo movimiento de venta, cancelación o devolución debe tener medios, y sus medios deben sumar exactamente su monto. Dos pruebas nuevas confirman que la base rechaza ambos casos.
+- **Suite tras la corrección:** **168/168 aprobadas, 0 fallidas, 0 omitidas**.
 
 ## Limitación aceptada del Bloque 1
 
@@ -258,7 +276,8 @@ Mantener la regresión de las 11 puertas en cualquier cambio futuro. Si se modif
 
 ### Verificación técnica ejecutada
 
-- `npm.cmd run ops:backup-restore` ejecutado contra PostgreSQL local 18.6 con una base temporal generada por el script: **aprobado**. Se conservaron el dato centinela, las **19 migraciones** y la ausencia de pendientes después de destruir y restaurar la base temporal.
+- `npm.cmd run ops:backup-restore` ejecutado contra PostgreSQL local 18.6 con una base temporal generada por el script: **aprobado**.
+- Re-ejecución del 23 de octubre de 2026 con `BACKUP_RESTORE_CONFIRM` definido: **aprobada**. Se conservaron las 19 migraciones y los datos, y no quedó ninguna base temporal (solo `libra_pos`). Se conservaron el dato centinela, las **19 migraciones** y la ausencia de pendientes después de destruir y restaurar la base temporal.
 - El ensayo usó únicamente una base con nombre `libra_pos_backup_test_*`; se eliminó al finalizar. No se destruyó ni modificó `libra_pos`.
 - Las migraciones existentes siguen aplicándose con bloqueo advisory, checksum SHA-256 y transacción por archivo; el procedimiento de fallo y recuperación quedó documentado.
 

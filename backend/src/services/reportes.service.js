@@ -647,8 +647,8 @@ async function reporteCaja(db, filtros) {
   const offset = (filtros.page - 1) * filtros.limit;
   const [resumenMovimientos, resumenCortes, porCajaUsuario, movimientos, cortes, abiertas] = await Promise.all([
     db.query(
-      `SELECT COUNT(*)::int AS movimientos,
-              COUNT(*) FILTER (WHERE m.actor_inferido)::int AS actores_inferidos,
+      `SELECT COUNT(DISTINCT m.movimiento_id)::int AS movimientos,
+              COUNT(DISTINCT m.movimiento_id) FILTER (WHERE m.actor_inferido)::int AS actores_inferidos,
               COALESCE(SUM(m.monto) FILTER (WHERE m.tipo='APERTURA'),0) AS fondos_apertura,
               COALESCE(SUM(m.monto) FILTER (WHERE m.tipo='VENTA' AND m.metodo_pago='EFECTIVO'),0) AS ventas_efectivo,
               COALESCE(SUM(m.monto) FILTER (WHERE m.tipo='VENTA' AND m.metodo_pago='TARJETA'),0) AS ventas_tarjeta,
@@ -667,7 +667,7 @@ async function reporteCaja(db, filtros) {
                 WHEN m.tipo='RETIRO' THEN -m.monto
                 WHEN m.tipo IN ('CANCELACION','DEVOLUCION') AND m.metodo_pago='EFECTIVO' THEN -m.monto
                 ELSE 0 END),0) AS flujo_efectivo
-       FROM movimientos m WHERE ${FILTRO_MOVIMIENTOS_CAJA}`,
+       FROM movimientos_por_medio m WHERE ${FILTRO_MOVIMIENTOS_CAJA}`,
       params
     ),
     db.query(
@@ -684,7 +684,7 @@ async function reporteCaja(db, filtros) {
     ),
     db.query(
       `SELECT m.caja_id, c.nombre AS caja_nombre, m.usuario_id, u.nombre AS usuario,
-              COUNT(*)::int AS movimientos,
+              COUNT(DISTINCT m.movimiento_id)::int AS movimientos,
               COALESCE(SUM(m.monto) FILTER (WHERE m.tipo='VENTA'),0) AS ventas,
               COALESCE(SUM(m.monto) FILTER (WHERE m.tipo IN ('CANCELACION','DEVOLUCION')),0) AS reversos,
               COALESCE(SUM(m.monto) FILTER (WHERE m.tipo='INGRESO'),0) AS ingresos,
@@ -695,7 +695,7 @@ async function reporteCaja(db, filtros) {
                 WHEN m.tipo='RETIRO' THEN -m.monto
                 WHEN m.tipo IN ('CANCELACION','DEVOLUCION') AND m.metodo_pago='EFECTIVO' THEN -m.monto
                 ELSE 0 END),0) AS flujo_efectivo
-       FROM movimientos m
+       FROM movimientos_por_medio m
        JOIN caja c ON c.id=m.caja_id JOIN usuarios u ON u.id=m.usuario_id
        WHERE ${FILTRO_MOVIMIENTOS_CAJA}
        GROUP BY m.caja_id, c.nombre, m.usuario_id, u.nombre
@@ -925,6 +925,8 @@ async function exportarCaja(db, filtros) {
   const result = await db.query(
     `SELECT m.id, m.creado_en, m.tipo, m.referencia, m.concepto, m.monto,
             m.metodo_pago, m.sesion_id, c.nombre AS caja_nombre,
+            (SELECT COALESCE(SUM(mp.monto),0) FROM movimiento_pagos mp
+              WHERE mp.movimiento_id=m.id AND mp.metodo_pago='EFECTIVO') AS monto_efectivo,
             u.nombre AS usuario, m.actor_inferido
      FROM movimientos m
      JOIN caja c ON c.id=m.caja_id JOIN usuarios u ON u.id=m.usuario_id
@@ -954,8 +956,9 @@ async function exportarCaja(db, filtros) {
       valor: (fila) => {
         if (fila.tipo === "INGRESO") return Number(fila.monto);
         if (fila.tipo === "RETIRO") return -Number(fila.monto);
-        if (fila.metodo_pago !== "EFECTIVO") return 0;
-        return fila.tipo === "VENTA" ? Number(fila.monto) : -Number(fila.monto);
+        if (fila.tipo === "VENTA") return Number(fila.monto_efectivo);
+        if (fila.tipo === "CANCELACION" || fila.tipo === "DEVOLUCION") return -Number(fila.monto_efectivo);
+        return 0;
       },
     },
     { clave: "referencia", etiqueta: "Referencia" },

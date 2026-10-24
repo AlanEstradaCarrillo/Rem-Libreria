@@ -12,6 +12,7 @@ const MAX_CANTIDAD_PRODUCTO = 999;
 const MAX_MONTO = 9_999_999_999.99;
 const COBRO_TIMEOUT_MS = 30_000;
 const METODOS_PAGO = new Set(["EFECTIVO", "TARJETA", "TRANSFERENCIA"]);
+const METODOS_VENTA = new Set([...METODOS_PAGO, "MIXTO"]);
 let TOKEN = null;
 let usuario = null;
 let versionSesion = 0;
@@ -28,6 +29,7 @@ let busquedaPosVersion = 0;
 let metodoPago = "EFECTIVO";
 let cobroEnCurso = false;
 let intentoCobro = null;
+let modoMixto = false;
 let ventaActiva = null;
 let postventaEnCurso = false;
 let intentoPostventa = null;
@@ -346,17 +348,35 @@ function restaurarIntentoCorte() {
   return true;
 }
 
+function pagosGuardadosValidos(pagos, total) {
+  if (!Array.isArray(pagos) || pagos.length < 1 || pagos.length > 3) return false;
+  let suma = 0;
+  for (const pago of pagos) {
+    if (!METODOS_PAGO.has(texto(pago && pago.metodo_pago))) return false;
+    const monto = leerMonto(pago.monto);
+    if (!monto.valido || monto.centavos <= 0) return false;
+    suma += monto.centavos;
+    if (pago.metodo_pago === "EFECTIVO") {
+      const recibido = leerMonto(pago.recibido);
+      if (!recibido.valido || recibido.centavos < monto.centavos) return false;
+    } else if (pago.recibido != null) return false;
+  }
+  return suma === total.centavos;
+}
+
 function intentoCobroGuardadoValido(valor) {
   if (!valor || !/^[A-Za-z0-9._:-]{8,100}$/.test(texto(valor.clave))) return false;
   const body = valor.body;
+  const esMixto = Boolean(body) && Array.isArray(body.pagos);
   if (!body || !Number.isInteger(numero(body.sesion_id)) || numero(body.sesion_id) <= 0
-      || !METODOS_PAGO.has(texto(body.metodo_pago))) return false;
+      || (!esMixto && !METODOS_PAGO.has(texto(body.metodo_pago)))) return false;
   if (!Array.isArray(body.items) || !body.items.length || body.items.length > MAX_PRODUCTOS_CARRITO) return false;
   if (body.items.some((item) => !Number.isInteger(numero(item.producto_id))
       || numero(item.producto_id) <= 0 || !Number.isInteger(numero(item.cantidad))
       || numero(item.cantidad) <= 0 || numero(item.cantidad) > MAX_CANTIDAD_PRODUCTO)) return false;
   const total = leerMonto(valor.total);
   if (!total.valido) return false;
+  if (esMixto) return pagosGuardadosValidos(body.pagos, total);
   if (body.metodo_pago === "EFECTIVO") {
     const recibido = leerMonto(body.recibido);
     if (!recibido.valido || recibido.centavos < total.centavos) return false;
@@ -1647,11 +1667,15 @@ $("btn-cobrar").addEventListener("click", async () => {
   $("cobro-error").textContent = "";
 
   if (intentoCobro) {
-    metodoPago = intentoCobro.body.metodo_pago;
+    modoMixto = Array.isArray(intentoCobro.body.pagos);
+    metodoPago = intentoCobro.body.metodo_pago || "EFECTIVO";
+    precargarPagosMixtos(modoMixto ? intentoCobro.body.pagos : []);
     $("inp-recibido").value = intentoCobro.body.recibido == null ? "" : numero(intentoCobro.body.recibido).toFixed(2);
     $("cobro-error").textContent = "Este cobro quedó pendiente de confirmación. Reintenta para consultar el mismo resultado sin duplicarlo.";
   } else {
+    modoMixto = false;
     metodoPago = "EFECTIVO";
+    limpiarPagosMixtos();
     $("inp-recibido").value = "";
   }
   $("lbl-cambio").textContent = "$0.00";
@@ -1667,8 +1691,11 @@ function pintarMetodosPago() {
   document.querySelectorAll(".seg-btn").forEach((b) =>
     b.classList.toggle("active", b.dataset.metodo === metodoPago)
   );
-  $("pago-efectivo").classList.toggle("hidden", metodoPago !== "EFECTIVO");
-  $("pago-no-efectivo").classList.toggle("hidden", metodoPago === "EFECTIVO");
+  $("seg-metodos-pago").classList.toggle("hidden", modoMixto);
+  $("btn-pago-mixto").textContent = modoMixto ? "Pagar con un solo medio" : "Dividir pago";
+  $("pago-mixto").classList.toggle("hidden", !modoMixto);
+  $("pago-efectivo").classList.toggle("hidden", modoMixto || metodoPago !== "EFECTIVO");
+  $("pago-no-efectivo").classList.toggle("hidden", modoMixto || metodoPago === "EFECTIVO");
   $("nota-pago-no-efectivo").textContent = metodoPago === "TARJETA"
     ? "Confirma primero la aprobación en la terminal bancaria; la aplicación sólo registrará el método de pago."
     : metodoPago === "TRANSFERENCIA"
@@ -1701,6 +1728,7 @@ document.querySelectorAll(".seg-btn").forEach((b) => b.addEventListener("click",
 }));
 
 function calcularCambio() {
+  if (modoMixto) return;
   const total = intentoCobro ? numero(intentoCobro.total) : totalCotizado();
   if (metodoPago !== "EFECTIVO") {
     $("lbl-cambio").textContent = fmt(0);
@@ -1723,24 +1751,94 @@ $("inp-recibido").addEventListener("input", () => {
   actualizarBloqueoCobro();
 });
 
+/* Pago dividido: montos por medio. Un campo vacío cuenta como cero. */
+const MEDIOS_MIXTOS = ["EFECTIVO", "TARJETA", "TRANSFERENCIA"];
+
+function montoMixto(id) {
+  const valor = $(id).value.trim();
+  if (valor === "") return { valido: true, valor: 0, centavos: 0 };
+  return leerMonto(valor);
+}
+
+function pagosMixtosValidos(total) {
+  const montos = MEDIOS_MIXTOS.map((medio) => montoMixto(`mix-monto-${medio}`));
+  if (montos.some((monto) => !monto.valido)) return false;
+  const suma = montos.reduce((acumulado, monto) => acumulado + monto.centavos, 0);
+  if (suma !== aCentavos(total) || suma === 0) return false;
+  const efectivo = montoMixto("mix-monto-EFECTIVO");
+  if (efectivo.centavos === 0) return true;
+  const recibido = montoMixto("mix-recibido");
+  return recibido.valido && recibido.centavos >= efectivo.centavos;
+}
+
+function pagosMixtosParaEnviar() {
+  return MEDIOS_MIXTOS
+    .map((medio) => ({ metodo_pago: medio, monto: montoMixto(`mix-monto-${medio}`) }))
+    .filter((pago) => pago.monto.centavos > 0)
+    .map((pago) => {
+      const enviado = { metodo_pago: pago.metodo_pago, monto: pago.monto.valor };
+      if (pago.metodo_pago === "EFECTIVO") enviado.recibido = montoMixto("mix-recibido").valor;
+      return enviado;
+    });
+}
+
+function precargarPagosMixtos(pagos) {
+  limpiarPagosMixtos();
+  for (const pago of pagos) {
+    $(`mix-monto-${pago.metodo_pago}`).value = numero(pago.monto).toFixed(2);
+    if (pago.metodo_pago === "EFECTIVO" && pago.recibido != null) {
+      $("mix-recibido").value = numero(pago.recibido).toFixed(2);
+    }
+  }
+}
+
+function limpiarPagosMixtos() {
+  for (const medio of MEDIOS_MIXTOS) $(`mix-monto-${medio}`).value = "";
+  $("mix-recibido").value = "";
+}
+
+function actualizarRestanteMixto(total) {
+  const suma = MEDIOS_MIXTOS.reduce((acumulado, medio) => acumulado + montoMixto(`mix-monto-${medio}`).centavos, 0);
+  const restante = aCentavos(total) - suma;
+  $("lbl-restante-mixto").textContent = fmt(Math.abs(restante) / 100) + (restante < 0 ? " de más" : "");
+  $("lbl-restante-mixto").style.color = restante === 0 ? "var(--ok)" : "var(--rojo)";
+}
+
 function actualizarBloqueoCobro() {
   const datosCongelados = Boolean(intentoCobro);
   const total = datosCongelados ? numero(intentoCobro.total) : totalCotizado();
   const recibido = leerMonto($("inp-recibido").value);
-  const pagoValido = datosCongelados || metodoPago !== "EFECTIVO"
-    || (recibido.valido && recibido.centavos >= aCentavos(total));
+  const pagoValido = datosCongelados
+    || (modoMixto ? pagosMixtosValidos(total)
+      : metodoPago !== "EFECTIVO" || (recibido.valido && recibido.centavos >= aCentavos(total)));
   $("btn-confirmar-pago").disabled = cobroEnCurso || !pagoValido;
   $("btn-confirmar-pago").textContent = cobroEnCurso ? "Procesando…" : datosCongelados ? "Reintentar cobro" : "Confirmar pago";
   $("inp-recibido").disabled = cobroEnCurso || datosCongelados;
-  document.querySelectorAll(".seg-btn, #quick-cash button").forEach((b) => {
+  document.querySelectorAll(".seg-btn, #quick-cash button, #btn-pago-mixto").forEach((b) => {
     b.disabled = cobroEnCurso || datosCongelados;
   });
+  document.querySelectorAll("#pago-mixto input").forEach((campo) => {
+    campo.disabled = cobroEnCurso || datosCongelados;
+  });
+  if (modoMixto) actualizarRestanteMixto(total);
   actualizarControlesCaja();
 }
 
+$("btn-pago-mixto").addEventListener("click", () => {
+  if (intentoCobro || cobroEnCurso) return;
+  modoMixto = !modoMixto;
+  if (!modoMixto) limpiarPagosMixtos();
+  pintarMetodosPago();
+  actualizarBloqueoCobro();
+});
+
+document.querySelectorAll("#pago-mixto input").forEach((campo) => campo.addEventListener("input", () => {
+  actualizarBloqueoCobro();
+}));
+
 function ventaResultadoValido(venta) {
   return Boolean(venta && Number.isInteger(numero(venta.id)) && numero(venta.id) > 0
-    && texto(venta.folio).trim() && METODOS_PAGO.has(texto(venta.metodo_pago))
+    && texto(venta.folio).trim() && METODOS_VENTA.has(texto(venta.metodo_pago))
     && leerMonto(venta.total).valido && Array.isArray(venta.detalle) && venta.detalle.length);
 }
 
@@ -1771,13 +1869,16 @@ $("btn-confirmar-pago").addEventListener("click", async () => {
       pintarEfectivoRapido(total);
       calcularCambio();
       actualizarBloqueoCobro();
-      const body = {
-        sesion_id: idSesionActual(),
-        metodo_pago: metodoPago,
-        items: carrito.map((l) => ({ producto_id: l.producto_id, cantidad: l.cantidad })),
-      };
+      if (modoMixto && !pagosMixtosValidos(total)) {
+        $("cobro-error").textContent = "Los pagos deben sumar exactamente el total y el efectivo recibido debe cubrir su parte.";
+        return;
+      }
+      const items = carrito.map((l) => ({ producto_id: l.producto_id, cantidad: l.cantidad }));
+      const body = modoMixto
+        ? { sesion_id: idSesionActual(), pagos: pagosMixtosParaEnviar(), items }
+        : { sesion_id: idSesionActual(), metodo_pago: metodoPago, items };
       if (clienteVentaId) body.cliente_id = clienteVentaId;
-      if (metodoPago === "EFECTIVO") {
+      if (!modoMixto && metodoPago === "EFECTIVO") {
         const recibido = leerMonto($("inp-recibido").value);
         if (!recibido.valido) {
           $("cobro-error").textContent = recibido.mensaje;
@@ -1898,10 +1999,22 @@ function mostrarTicket(v) {
   body.append(
     lineaTicket("Subtotal", fmt(v.subtotal)),
     lineaTicket("IVA", fmt(v.iva)),
-    lineaTicket("TOTAL", fmt(v.total), true),
-    lineaTicket("Pago (" + texto(v.metodo_pago) + ")", fmt(v.metodo_pago === "EFECTIVO" ? v.recibido : v.total))
+    lineaTicket("TOTAL", fmt(v.total), true)
   );
-  if (v.metodo_pago === "EFECTIVO") body.appendChild(lineaTicket("Cambio", fmt(v.cambio)));
+  const pagos = Array.isArray(v.pagos) ? v.pagos : [];
+  if (pagos.length > 1) {
+    for (const pago of pagos) {
+      body.appendChild(lineaTicket("Pago (" + texto(pago.metodo_pago) + ")", fmt(pago.monto)));
+      if (pago.metodo_pago === "EFECTIVO" && pago.recibido != null) {
+        body.appendChild(lineaTicket("  Recibido", fmt(pago.recibido)));
+      }
+    }
+    const efectivo = pagos.find((pago) => pago.metodo_pago === "EFECTIVO");
+    if (efectivo) body.appendChild(lineaTicket("Cambio", fmt(numero(efectivo.cambio))));
+  } else {
+    body.appendChild(lineaTicket("Pago (" + texto(v.metodo_pago) + ")", fmt(v.metodo_pago === "EFECTIVO" ? v.recibido : v.total)));
+    if (v.metodo_pago === "EFECTIVO") body.appendChild(lineaTicket("Cambio", fmt(v.cambio)));
+  }
   body.append(document.createElement("hr"), nodo("div", "c", "¡Gracias por tu compra! 📖"));
   abrirModal("modal-ticket");
 }
