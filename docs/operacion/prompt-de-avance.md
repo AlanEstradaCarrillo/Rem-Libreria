@@ -85,7 +85,7 @@ Estado según el código y la suite de la rama, no según el zip de análisis or
 1. **Fusionar PR #2** a `main`, y cuándo hacerlo.
 2. **Protección de `main`:** elegir un plan de GitHub que lo permita, o aceptar operar sin esa protección.
 3. **Sucursales:** ¿hay más de un punto de venta físico que comparta stock?
-4. **Pagos mixtos y permisos por función:** son funciones nuevas. El protocolo las prohíbe antes de cerrar las puertas de producción; si se quieren ahora, hace falta una excepción explícita. Implican reabrir los bloques 1, 5 y 6.
+4. **Pagos mixtos y permisos por función:** son funciones nuevas. El protocolo las prohíbe antes de cerrar las puertas de producción; si se quieren ahora, hace falta una excepción explícita. Implican reabrir los bloques 1, 5 y 6. **Decisión del 23 de octubre de 2026: no se autoriza la excepción.**
 5. **Fiscal:** régimen de Librería REM, si hoy factura, cómo lo hace y si habrá PAC.
 6. **Staging:** proveedor, URL y base de datos separada.
 7. **Impresora térmica:** modelo, ancho del papel y prueba física.
@@ -97,7 +97,7 @@ Sin decisiones pendientes del titular, el trabajo técnico restante es mínimo:
 - Mantener la suite en verde en cada cambio.
 - Documentar el ensayo de respaldo y restauración en `VERIFICACION.md`, Bloque 11, como evidencia técnica de la fecha.
 
-No se implementan funciones nuevas hasta que se resuelva la decisión 4.
+No se implementan funciones nuevas. La decisión 4 quedó resuelta sin excepción el 23 de octubre de 2026, así que el protocolo sigue vigente hasta cerrar las puertas de producción.
 
 ## 9. Cómo retomar
 
