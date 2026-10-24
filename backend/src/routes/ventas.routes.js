@@ -14,6 +14,13 @@ const { parsePositiveId, bloquearSesionAbierta } = require("../services/caja.ser
 const { bloquearProductos, aplicarMovimiento } = require("../services/inventario.service");
 const { compactarItems, cotizar } = require("../services/precios.service");
 const { cargarClienteActivo } = require("../services/clientes.service");
+const {
+  normalizarMediosCobro,
+  metodoResumen,
+  repartirReverso,
+  acumularReversos,
+  registrarMedios,
+} = require("../services/pagos.service");
 const { z } = require("zod");
 
 router.use(requireAuth);
@@ -40,9 +47,19 @@ function validarTotalesVenta({ subtotal, iva, total }) {
   }
 }
 
+const pagoVentaSchema = z.object({
+  metodo_pago: z.enum(["EFECTIVO", "TARJETA", "TRANSFERENCIA"]),
+  monto: montoCobroSchema.refine((valor) => valor > 0, "El monto de cada pago debe ser mayor que cero"),
+  recibido: montoCobroSchema.optional(),
+});
+
 const ventaSchema = z.object({
   sesion_id: z.number().int().positive(),
-  metodo_pago: z.enum(["EFECTIVO", "TARJETA", "TRANSFERENCIA"]),
+  metodo_pago: z.enum(["EFECTIVO", "TARJETA", "TRANSFERENCIA"]).optional(),
+  pagos: z.array(pagoVentaSchema)
+    .min(1, "Indica al menos un medio de pago")
+    .max(3, "Una venta admite como máximo tres medios de pago")
+    .optional(),
   cliente_id: z.number().int().positive().optional().nullable(),
   cliente: z.string().trim().min(2).max(120).optional().nullable(),
   recibido: montoCobroSchema.optional(),
@@ -58,6 +75,30 @@ const ventaSchema = z.object({
       path: ["cliente_id"],
       message: "Indica un cliente registrado o un nombre libre, pero no ambos.",
     });
+  }
+  if ((value.metodo_pago == null) === (value.pagos == null)) {
+    ctx.addIssue({
+      code: "custom",
+      path: ["pagos"],
+      message: "Indica metodo_pago o pagos, pero no ambos.",
+    });
+  }
+  if (value.pagos) {
+    const metodos = value.pagos.map((pago) => pago.metodo_pago);
+    if (new Set(metodos).size !== metodos.length) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["pagos"],
+        message: "Cada medio de pago solo puede aparecer una vez.",
+      });
+    }
+    if (value.recibido != null) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["recibido"],
+        message: "Con varios pagos, el monto recibido va dentro del pago en efectivo.",
+      });
+    }
   }
 });
 
@@ -80,6 +121,38 @@ const devolucionSchema = z.object({
     cantidad: z.number().int().positive().max(999),
   })).min(1, "La devolución requiere al menos un artículo"),
 });
+
+/** Medios de pago cobrados en la venta, leídos del movimiento de venta. */
+async function mediosDeVenta(client, ventaId) {
+  const r = await client.query(
+    `SELECT mp.metodo_pago, mp.monto
+     FROM movimiento_pagos mp
+     JOIN movimientos m ON m.id=mp.movimiento_id
+     WHERE m.venta_id=$1 AND m.tipo='VENTA'
+     ORDER BY mp.id`,
+    [ventaId]
+  );
+  return r.rows.map((fila) => ({ metodo_pago: fila.metodo_pago, monto: Number(fila.monto) }));
+}
+
+async function mediosDeVentaRequeridos(client, ventaId) {
+  const medios = await mediosDeVenta(client, ventaId);
+  if (!medios.length) throw new ApiError(409, "La venta no tiene medios de pago registrados.");
+  return medios;
+}
+
+/** Filas de reverso ya registradas para la venta, por medio de pago. */
+async function reversosPorMedio(client, ventaId) {
+  const r = await client.query(
+    `SELECT mp.metodo_pago, mp.monto
+     FROM movimiento_pagos mp
+     JOIN movimientos m ON m.id=mp.movimiento_id
+     WHERE m.tipo='DEVOLUCION'
+       AND m.devolucion_id IN (SELECT id FROM devoluciones WHERE venta_id=$1)`,
+    [ventaId]
+  );
+  return r.rows;
+}
 
 async function cargarVenta(client, ventaId) {
   const v = await client.query(
@@ -108,7 +181,15 @@ async function cargarVenta(client, ventaId) {
      ORDER BY dv.id`,
     [ventaId]
   );
-  return { ...v.rows[0], detalle: d.rows };
+  const pagos = await client.query(
+    `SELECT mp.metodo_pago, mp.monto, mp.recibido, mp.cambio
+     FROM movimiento_pagos mp
+     JOIN movimientos m ON m.id=mp.movimiento_id
+     WHERE m.venta_id=$1 AND m.tipo='VENTA'
+     ORDER BY mp.id`,
+    [ventaId]
+  );
+  return { ...v.rows[0], detalle: d.rows, pagos: pagos.rows };
 }
 
 async function cargarCancelacion(client, cancelacionId) {
@@ -304,11 +385,12 @@ router.post(
           }
         }
 
-        await client.query(
+        const movimientoCobro = await client.query(
           `INSERT INTO movimientos
              (sesion_id, caja_id, usuario_id, tipo, referencia, concepto, monto,
               metodo_pago, venta_id, actor_inferido)
-           VALUES ($1,$2,$3,'VENTA',$4,$5,$6,$7,$8,FALSE)`,
+           VALUES ($1,$2,$3,'VENTA',$4,$5,$6,$7,$8,FALSE)
+           RETURNING id`,
           [
             sesion.id,
             sesion.caja_id,
@@ -320,6 +402,11 @@ router.post(
             venta.id,
           ]
         );
+        await registrarMedios(client, movimientoCobro.rows[0].id, [{
+          metodo_pago: req.body.metodo_pago,
+          monto: total,
+          recibido: req.body.metodo_pago === "EFECTIVO" ? req.body.recibido : null,
+        }]);
         await client.query(
           `INSERT INTO pedido_transiciones
              (pedido_id, estado_anterior, estado_nuevo, actor, usuario_id,
@@ -357,11 +444,12 @@ router.post("/", validate(ventaSchema), async (req, res, next) => {
     const items = compactarItems(req.body.items, "producto_id");
     const solicitud = {
       sesion_id: req.body.sesion_id,
-      metodo_pago: req.body.metodo_pago,
+      metodo_pago: req.body.metodo_pago ?? null,
       cliente_id: req.body.cliente_id ?? null,
       cliente: req.body.cliente ?? null,
       recibido: req.body.metodo_pago === "EFECTIVO" ? req.body.recibido : null,
       items,
+      ...(req.body.pagos ? { pagos: req.body.pagos } : {}),
     };
     const solicitudHash = hashRequest(solicitud);
 
@@ -413,11 +501,14 @@ router.post("/", validate(ventaSchema), async (req, res, next) => {
         cotizacion.lineas.map((linea) => [linea.producto_id, linea])
       );
 
-      if (req.body.metodo_pago === "EFECTIVO") {
-        if (req.body.recibido == null || req.body.recibido < total) {
-          throw new ApiError(400, `Pago insuficiente: se requieren ${fmt(total)}.`);
-        }
-      }
+      const medios = normalizarMediosCobro({
+        total,
+        metodo_pago: req.body.metodo_pago,
+        recibido: req.body.recibido,
+        pagos: req.body.pagos,
+      });
+      const metodoVenta = metodoResumen(medios);
+      const efectivoUnico = medios.length === 1 && medios[0].metodo_pago === "EFECTIVO";
 
       const v = await client.query(
          `INSERT INTO ventas
@@ -427,10 +518,10 @@ router.post("/", validate(ventaSchema), async (req, res, next) => {
          RETURNING *`,
         [
           sesion.id, sesion.caja_id, req.user.sub, clienteId, clienteNombre,
-          segmentoPrecio, req.body.metodo_pago,
+          segmentoPrecio, metodoVenta,
           subtotal, ivaTotal, total,
-          req.body.metodo_pago === "EFECTIVO" ? req.body.recibido : null,
-          req.body.metodo_pago === "EFECTIVO" ? round2(req.body.recibido - total) : null,
+          efectivoUnico ? medios[0].recibido : null,
+          efectivoUnico ? round2(medios[0].recibido - total) : null,
         ]
       );
       const ventaRow = v.rows[0];
@@ -462,17 +553,19 @@ router.post("/", validate(ventaSchema), async (req, res, next) => {
         });
       }
 
-      await client.query(
+      const movimientoVenta = await client.query(
         `INSERT INTO movimientos
            (sesion_id, caja_id, usuario_id, tipo, referencia, concepto, monto,
             metodo_pago, venta_id, actor_inferido)
-         VALUES ($1,$2,$3,'VENTA',$4,$5,$6,$7,$8,FALSE)`,
+         VALUES ($1,$2,$3,'VENTA',$4,$5,$6,$7,$8,FALSE)
+         RETURNING id`,
         [
           sesion.id, sesion.caja_id, req.user.sub, ventaRow.folio,
-          `Venta ${ventaRow.folio} (${req.body.metodo_pago.toLowerCase()})`,
-          total, req.body.metodo_pago, ventaRow.id,
+          `Venta ${ventaRow.folio} (${metodoVenta.toLowerCase()})`,
+          total, metodoVenta, ventaRow.id,
         ]
       );
+      await registrarMedios(client, movimientoVenta.rows[0].id, medios);
       await completeOperation(client, {
         usuarioId: req.user.sub,
         operacion: "VENTA_POS",
@@ -552,16 +645,20 @@ router.post(
           });
         }
         await client.query(`UPDATE ventas SET estado='CANCELADA' WHERE id=$1`, [venta.id]);
-        await client.query(
+        const mediosCancelados = await mediosDeVentaRequeridos(client, venta.id);
+        const movimientoCancelacion = await client.query(
           `INSERT INTO movimientos
              (sesion_id, caja_id, usuario_id, tipo, referencia, concepto, monto,
               metodo_pago, cancelacion_id, actor_inferido)
-           VALUES ($1,$2,$3,'CANCELACION',$4,$5,$6,$7,$8,FALSE)`,
+           VALUES ($1,$2,$3,'CANCELACION',$4,$5,$6,$7,$8,FALSE)
+           RETURNING id`,
           [
             sesion.id, sesion.caja_id, req.user.sub, venta.folio,
-            `Cancelación de venta ${venta.folio}`, venta.total, venta.metodo_pago, cancelacion.id,
+            `Cancelación de venta ${venta.folio}`, venta.total,
+            metodoResumen(mediosCancelados), cancelacion.id,
           ]
         );
+        await registrarMedios(client, movimientoCancelacion.rows[0].id, mediosCancelados);
         await completeOperation(client, {
           usuarioId: req.user.sub,
           operacion: "CANCELACION_VENTA",
@@ -695,16 +792,23 @@ router.post(
           ? "DEVUELTA"
           : "PARCIALMENTE_DEVUELTA";
         await client.query(`UPDATE ventas SET estado=$2 WHERE id=$1`, [venta.id, nuevoEstado]);
-        await client.query(
+        const repartos = repartirReverso({
+          importe: total,
+          mediosVenta: await mediosDeVentaRequeridos(client, venta.id),
+          reversadoPorMedio: acumularReversos(await reversosPorMedio(client, venta.id)),
+        });
+        const movimientoDevolucion = await client.query(
           `INSERT INTO movimientos
              (sesion_id, caja_id, usuario_id, tipo, referencia, concepto, monto,
               metodo_pago, devolucion_id, actor_inferido)
-           VALUES ($1,$2,$3,'DEVOLUCION',$4,$5,$6,$7,$8,FALSE)`,
+           VALUES ($1,$2,$3,'DEVOLUCION',$4,$5,$6,$7,$8,FALSE)
+           RETURNING id`,
           [
             sesion.id, sesion.caja_id, req.user.sub, venta.folio,
-            `Devolución de venta ${venta.folio}`, total, venta.metodo_pago, devolucion.id,
+            `Devolución de venta ${venta.folio}`, total, metodoResumen(repartos), devolucion.id,
           ]
         );
+        await registrarMedios(client, movimientoDevolucion.rows[0].id, repartos);
         await completeOperation(client, {
           usuarioId: req.user.sub,
           operacion: "DEVOLUCION_VENTA",

@@ -826,10 +826,23 @@
       <div class="modal-head"><h3>Cobrar venta</h3><button class="modal-x" data-close>×</button></div>
       <div class="modal-body">
         <div class="cobro-total" id="cobro-total">$0.00</div>
-        <div class="seg">
+        <div class="seg" id="seg-metodos-pago">
           <button class="seg-btn active" data-metodo="EFECTIVO">💵 Efectivo</button>
           <button class="seg-btn" data-metodo="TARJETA">💳 Tarjeta</button>
           <button class="seg-btn" data-metodo="TRANSFERENCIA">🏦 Transferencia</button>
+        </div>
+        <button id="btn-pago-mixto" class="btn btn-ghost" type="button">Dividir pago</button>
+        <div id="pago-mixto" class="hidden">
+          <p class="nota-terminal">Reparte el total entre varios medios. Los montos deben sumar exactamente el total.</p>
+          <label class="lbl" for="mix-monto-EFECTIVO">💵 Efectivo</label>
+          <input id="mix-monto-EFECTIVO" class="inp" type="number" min="0" max="9999999999.99" step="0.01" inputmode="decimal">
+          <label class="lbl" for="mix-recibido">Efectivo recibido</label>
+          <input id="mix-recibido" class="inp" type="number" min="0" max="9999999999.99" step="0.01" inputmode="decimal">
+          <label class="lbl" for="mix-monto-TARJETA">💳 Tarjeta</label>
+          <input id="mix-monto-TARJETA" class="inp" type="number" min="0" max="9999999999.99" step="0.01" inputmode="decimal">
+          <label class="lbl" for="mix-monto-TRANSFERENCIA">🏦 Transferencia</label>
+          <input id="mix-monto-TRANSFERENCIA" class="inp" type="number" min="0" max="9999999999.99" step="0.01" inputmode="decimal">
+          <div class="cambio-linea"><span>Restante:</span><strong id="lbl-restante-mixto">$0.00</strong></div>
         </div>
         <div id="pago-efectivo">
           <label class="lbl">Monto recibido</label>

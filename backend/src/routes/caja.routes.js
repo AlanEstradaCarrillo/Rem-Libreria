@@ -20,7 +20,7 @@ router.use(requireAuth);
 async function totalesSesion(client, sesionId) {
   const r = await client.query(
     `SELECT
-       COUNT(*) FILTER (WHERE tipo='VENTA')::int AS n_ventas,
+       COUNT(DISTINCT movimiento_id) FILTER (WHERE tipo='VENTA')::int AS n_ventas,
        COALESCE(SUM(monto) FILTER (WHERE tipo='VENTA' AND metodo_pago='EFECTIVO'),0) AS ventas_efectivo,
        COALESCE(SUM(monto) FILTER (WHERE tipo='VENTA' AND metodo_pago='TARJETA'),0) AS ventas_tarjeta,
        COALESCE(SUM(monto) FILTER (WHERE tipo='VENTA' AND metodo_pago='TRANSFERENCIA'),0) AS ventas_transf,
@@ -35,7 +35,7 @@ async function totalesSesion(client, sesionId) {
        ),0) AS devoluciones_transf,
        COALESCE(SUM(monto) FILTER (WHERE tipo='RETIRO'),0) AS retiros,
        COALESCE(SUM(monto) FILTER (WHERE tipo='INGRESO'),0) AS ingresos
-     FROM movimientos
+     FROM movimientos_por_medio
      WHERE sesion_id=$1`,
     [sesionId]
   );

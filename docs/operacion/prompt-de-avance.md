@@ -97,7 +97,7 @@ Sin decisiones pendientes del titular, el trabajo técnico restante es mínimo:
 - Mantener la suite en verde en cada cambio.
 - Documentar el ensayo de respaldo y restauración en `VERIFICACION.md`, Bloque 11, como evidencia técnica de la fecha.
 
-La única excepción vigente es pagos mixtos (decisión 4, 23 de octubre de 2026). Su implementación reabre los bloques 5, 6, 8 y 9. No se implementa ninguna otra función nueva hasta cerrar las puertas de producción.
+La única excepción vigente es pagos mixtos (decisión 4, 23 de octubre de 2026). Su implementación reabre los bloques 5 a 9, incluido el 7 por el cambio en el ticket. Quedó implementada y reverificada el 23 de octubre de 2026, con la evidencia en `VERIFICACION.md`. No se implementa ninguna otra función nueva hasta cerrar las puertas de producción.
 
 ## 9. Cómo retomar
 
