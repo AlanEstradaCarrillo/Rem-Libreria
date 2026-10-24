@@ -9,6 +9,15 @@ let sequence = 0;
 const number = (value) => Number(value);
 const nextLabel = (prefix) => `${prefix}-${++sequence}`;
 
+// Las liquidaciones se anclan a la fecha de ejecución: las ventas de la prueba se
+// registran con la hora actual, así que los periodos deben contenerla. Los periodos
+// siguientes avanzan consecutivamente para que la prueba no dependa del mes en que se corra.
+const diaRelativo = (dias) => new Date(Date.now() + dias * 86400000).toISOString().slice(0, 10);
+const instanteRelativo = (dias) => `${diaRelativo(dias)}T18:00:00Z`;
+const PERIODO_INICIAL = [diaRelativo(-30), diaRelativo(1)];
+const PERIODO_SIGUIENTE = [diaRelativo(1), diaRelativo(31)];
+const PERIODO_POSTERIOR = [diaRelativo(31), diaRelativo(61)];
+
 function expectStatus(response, expected, context) {
   assert.equal(
     response.status,
@@ -127,7 +136,7 @@ async function prepareContract(baseUrl, admin, supervisor) {
       territorio: "México",
       idioma_derechos: "Español",
       exclusividad: true,
-      vigente_desde: "2026-09-01",
+      vigente_desde: "2020-01-01",
       vigente_hasta: "2030-12-31",
       base_regalia: "VENTA_NETA",
       porcentaje_regalia: 10,
@@ -273,8 +282,8 @@ test("regalías y estados de cuenta desde ventas netas reales", { timeout: 24000
         baseUrl,
         supervisor.token,
         contract.id,
-        "2026-09-01",
-        "2026-10-01"
+        PERIODO_INICIAL[0],
+        PERIODO_INICIAL[1]
       ), 403, "generación por supervisor");
 
       const key = randomUUID();
@@ -282,8 +291,8 @@ test("regalías y estados de cuenta desde ventas netas reales", { timeout: 24000
         baseUrl,
         admin.token,
         contract.id,
-        "2026-09-01",
-        "2026-10-01",
+        PERIODO_INICIAL[0],
+        PERIODO_INICIAL[1],
         key
       );
       const responses = await Promise.all([generate(), generate()]);
@@ -311,16 +320,16 @@ test("regalías y estados de cuenta desde ventas netas reales", { timeout: 24000
       assert.equal(number(firstStatement.importe_pagable), 30);
       assert.equal(number((await pool.query(
         `SELECT COUNT(*) AS n FROM liquidaciones_regalias
-         WHERE contrato_editorial_id=$1 AND periodo_desde='2026-09-01'`,
-        [contract.id]
+         WHERE contrato_editorial_id=$1 AND periodo_desde=$2`,
+        [contract.id, PERIODO_INICIAL[0]]
       )).rows[0].n), 1);
 
       expectStatus(await generateStatement(
         baseUrl,
         admin.token,
         contract.id,
-        "2026-09-15",
-        "2026-10-15"
+        diaRelativo(-15),
+        diaRelativo(15)
       ), 409, "rechazar periodo superpuesto");
       await pool.query(`SELECT validar_liquidacion_regalia_conciliada($1)`, [firstStatement.id]);
     });
@@ -384,16 +393,16 @@ test("regalías y estados de cuenta desde ventas netas reales", { timeout: 24000
         }
       ), 201, "devolución de periodo posterior");
       await pool.query(
-        `UPDATE movimientos SET creado_en='2026-10-15T18:00:00Z'
+        `UPDATE movimientos SET creado_en=$2
          WHERE devolucion_id=$1`,
-        [lateReturn.devolucion.id]
+        [lateReturn.devolucion.id, instanteRelativo(10)]
       );
       secondStatement = expectStatus(await generateStatement(
         baseUrl,
         admin.token,
         contract.id,
-        "2026-10-01",
-        "2026-11-01"
+        PERIODO_SIGUIENTE[0],
+        PERIODO_SIGUIENTE[1]
       ), 201, "liquidar periodo negativo");
       assert.equal(number(secondStatement.unidades_netas), -5);
       assert.equal(number(secondStatement.base_regalia_total), -500);
@@ -410,16 +419,16 @@ test("regalías y estados de cuenta desde ventas netas reales", { timeout: 24000
       const saleC = expectStatus(await sell(baseUrl, cashier, session, product, 8), 201,
         "venta del tercer periodo");
       await pool.query(
-        `UPDATE movimientos SET creado_en='2026-11-15T18:00:00Z'
+        `UPDATE movimientos SET creado_en=$2
          WHERE venta_id=$1`,
-        [saleC.id]
+        [saleC.id, instanteRelativo(40)]
       );
       thirdStatement = expectStatus(await generateStatement(
         baseUrl,
         admin.token,
         contract.id,
-        "2026-11-01",
-        "2026-12-01"
+        PERIODO_POSTERIOR[0],
+        PERIODO_POSTERIOR[1]
       ), 201, "liquidar periodo que absorbe saldo");
       assert.equal(number(thirdStatement.unidades_netas), 8);
       assert.equal(number(thirdStatement.regalia_bruta), 80);
@@ -453,8 +462,8 @@ test("regalías y estados de cuenta desde ventas netas reales", { timeout: 24000
         baseUrl,
         admin.token,
         contract.id,
-        "2026-11-01",
-        "2026-12-01"
+        PERIODO_POSTERIOR[0],
+        PERIODO_POSTERIOR[1]
       ), 201, "regenerar periodo cancelado");
       assert.equal(number(replacement.version), 2);
       assert.equal(number(replacement.reemplaza_liquidacion_id), number(thirdStatement.id));

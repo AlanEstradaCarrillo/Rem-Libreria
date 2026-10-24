@@ -1,6 +1,6 @@
 # Control de verificación — Librería REM
 
-Última actualización: 22 de septiembre de 2026.
+Última actualización: 23 de octubre de 2026.
 
 Este registro distingue código existente de comportamiento comprobado. Un bloque sólo entra en la lista cuando su flujo crítico fue ejecutado y pasó sus pruebas. Si un cambio posterior afecta un bloque aprobado, deberá marcarse como reabierto y volver a probarse.
 
@@ -182,6 +182,16 @@ Estado: **VERIFICADO**. El núcleo definido en este protocolo cumple la condici�
 ## Limitación aceptada del Bloque 1
 
 El logout elimina la sesión guardada en el navegador, pero no mantiene una lista de revocación de JWT en el servidor. Un token que hubiese sido copiado fuera del navegador conserva su vigencia hasta `JWT_EXPIRES`. Desactivar al usuario invalida el acceso en la siguiente petición porque el backend consulta PostgreSQL cada vez.
+
+## Prueba modificada — regalías editorial (23 de octubre de 2026)
+
+- **Prueba modificada:** `backend/test/integration/editorial-royalties.test.js`, caso principal «regalías y estados de cuenta desde ventas netas reales».
+- **Motivo:** la prueba fijaba periodos de liquidación en septiembre-diciembre de 2026, pero las ventas se registran con la hora del servidor. Al ejecutarla después de ese periodo, las liquidaciones salían vacías y las 6 aserciones fallaban (154/160 aprobadas). El fallo dependía de la fecha de ejecución, no del comportamiento del módulo.
+- **Comportamiento anterior:** periodos fijos del 1 de septiembre al 1 de diciembre de 2026 y vigencia contractual desde 2026-09-01.
+- **Comportamiento nuevo:** los periodos se calculan a partir de la fecha de ejecución: el primero va de 30 días antes a mañana y los siguientes son mensuales y consecutivos hacia adelante. Las fechas de las devoluciones tardías y de la venta del tercer periodo se fijan en relación con esa misma fecha. La vigencia contractual inicia el 2020-01-01.
+- **Autorización funcional:** corrección aprobada por el titular del proyecto en esta sesión.
+- **Resultado:** suite completa **160/160 aprobadas, 0 fallidas, 0 omitidas** (≈158 s), con PostgreSQL 18.6 local y Node 24.19.0. Corrida desde la rama `fix/editorial-royalties-fechas-fijas`, con un commit local; no fusionada ni publicada.
+- **Limitación:** se verificó con la fecha de ejecución del 23 de octubre de 2026. No se comprobó con otras fechas, así que la independencia de la fecha queda garantizada por diseño, no probada.
 
 ## Siguiente acción autorizada
 
