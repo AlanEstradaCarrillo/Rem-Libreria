@@ -64,7 +64,8 @@ Estado según el código y la suite de la rama, no según el zip de análisis or
 | Categorías y departamentos | Implementado, probado por la suite | `categorias.routes.js`, migración `004`. |
 | Reportes | Implementado, probado por la suite | `reportes.routes.js`. Prueba: `reports`. |
 | Permisos por función, más allá de roles | ❌ No implementado | Solo tres roles fijos, con restricción `CHECK` en el esquema. Requiere decisión de negocio sobre la matriz de permisos. |
-| Pagos mixtos y varias monedas | ❌ No implementado | Cada venta tiene un único `metodo_pago`. Es una función nueva que reabre los bloques 5 y 6. |
+| Pagos mixtos | ✅ Implementado y verificado (23 de octubre de 2026) | Migraciones `020` y `021`, `pagos.service.js`, pruebas `pagos-mixtos.test.js`. Ver `VERIFICACION.md`, reapertura de pagos mixtos. |
+| Varias monedas | ❌ No implementado | Función nueva. Requiere excepción explícita del titular. |
 | Varias sucursales con stock por sucursal y traspasos | ❌ No implementado | Hay varias cajas, pero no sucursales. Requiere saber si existe más de un punto físico. |
 | CFDI 4.0 | ❌ No implementado | Bloque 12: decisión externa. No se implementa sin decisiones del negocio. |
 | Editorial avanzada (contratos, tirajes, regalías, consignaciones) | Implementado, fuera de alcance | Existe en el código y tiene pruebas. No se amplía. |

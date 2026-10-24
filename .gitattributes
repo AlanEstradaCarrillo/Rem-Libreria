@@ -1,0 +1,3 @@
+# Las sumas de las migraciones se calculan sobre el texto con finales de línea LF.
+# Forzar LF evita que cada checkout (Windows con autocrlf, Linux) produzca sumas distintas.
+backend/database/migrations/*.sql text eol=lf
