@@ -1692,7 +1692,7 @@ function pintarMetodosPago() {
     b.classList.toggle("active", b.dataset.metodo === metodoPago)
   );
   $("seg-metodos-pago").classList.toggle("hidden", modoMixto);
-  $("btn-pago-mixto").classList.toggle("hidden", modoMixto);
+  $("btn-pago-mixto").textContent = modoMixto ? "Pagar con un solo medio" : "Dividir pago";
   $("pago-mixto").classList.toggle("hidden", !modoMixto);
   $("pago-efectivo").classList.toggle("hidden", modoMixto || metodoPago !== "EFECTIVO");
   $("pago-no-efectivo").classList.toggle("hidden", modoMixto || metodoPago === "EFECTIVO");

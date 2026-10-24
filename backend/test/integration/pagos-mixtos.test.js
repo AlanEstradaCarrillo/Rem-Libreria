@@ -246,6 +246,54 @@ test("pagos mixtos: cobro, reverso, devolución y caja por medio", { timeout: 24
       assert.equal(num(estado.esperado), 492);
       assert.equal(num(estado.ventas_transf), 56);
     });
+
+    await t.test("la base rechaza movimientos de venta sin medios o con medios que no suman su monto", async () => {
+      const referencia = (await pool.query(
+        `SELECT sesion_id, caja_id, usuario_id FROM ventas ORDER BY id LIMIT 1`
+      )).rows[0];
+      const client = await pool.connect();
+      const nuevaVenta = async () => (await client.query(
+        `INSERT INTO ventas (sesion_id, caja_id, usuario_id, cliente, metodo_pago, subtotal, iva, total)
+         VALUES ($1,$2,$3,'Prueba de garantía','EFECTIVO',0,0,0) RETURNING id`,
+        [referencia.sesion_id, referencia.caja_id, referencia.usuario_id]
+      )).rows[0].id;
+      const movimientoVenta = async (ventaId, monto) => (await client.query(
+        `INSERT INTO movimientos
+           (sesion_id, caja_id, usuario_id, tipo, referencia, concepto, monto,
+            metodo_pago, venta_id, actor_inferido)
+         VALUES ($1,$2,$3,'VENTA','GARANTIA','Prueba de garantía',$4,'EFECTIVO',$5,FALSE)
+         RETURNING id`,
+        [referencia.sesion_id, referencia.caja_id, referencia.usuario_id, monto, ventaId]
+      )).rows[0].id;
+      try {
+        await client.query("BEGIN");
+        const ventaSinMedios = await nuevaVenta();
+        await movimientoVenta(ventaSinMedios, 0);
+        await assert.rejects(client.query("COMMIT"), (error) => error.code === "23514"
+          && /no tiene medios de pago/.test(error.message));
+        await client.query("ROLLBACK");
+
+        await client.query("BEGIN");
+        const ventaSumaDistinta = await nuevaVenta();
+        const movimientoSumaDistinta = await movimientoVenta(ventaSumaDistinta, 10);
+        await client.query(
+          `INSERT INTO movimiento_pagos (movimiento_id, metodo_pago, monto)
+           VALUES ($1,'EFECTIVO',5)`,
+          [movimientoSumaDistinta]
+        );
+        await assert.rejects(client.query("COMMIT"), (error) => error.code === "23514"
+          && /suman 5/.test(error.message));
+        await client.query("ROLLBACK");
+
+        const persistidas = (await pool.query(
+          `SELECT COUNT(*) AS n FROM ventas WHERE cliente='Prueba de garantía'`
+        )).rows[0];
+        assert.equal(num(persistidas.n), 0);
+      } finally {
+        await client.query("ROLLBACK").catch(() => {});
+        client.release();
+      }
+    });
   } finally {
     await environment.cleanup();
   }
